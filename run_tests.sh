@@ -14,11 +14,10 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p bin
 
 CXX="${CXX:-g++}"
-# Prefer the project venv (Python 3.12) when it exists; else fall back to PATH.
+# Prefer the WSL project venv; never select a Windows interpreter implicitly.
 if [ -z "${PY:-}" ]; then
-    if   [ -x ".venv/Scripts/python.exe" ]; then PY=".venv/Scripts/python"   # Windows venv
-    elif [ -x ".venv/bin/python" ];         then PY=".venv/bin/python"       # Linux/macOS venv
-    else PY="python"; fi
+    if [ -x ".venv/bin/python" ]; then PY=".venv/bin/python"
+    else PY="python3"; fi
 fi
 command -v "$CXX" >/dev/null || { echo "FATAL: no C++ compiler ($CXX) on PATH."; exit 2; }
 command -v "$PY"  >/dev/null || { echo "FATAL: no Python interpreter ($PY) on PATH."; exit 2; }
@@ -94,7 +93,7 @@ echo "  match: C++ CLI output is byte-for-byte identical to $GOLDEN (modulo CR)"
 
 # ---- 5/5: run the Python suite, including the SAME golden-file check --------
 echo ""
-echo ">>> [5/5] Running Python 3.12 test suite (pytest)"
+echo ">>> [5/5] Running Python test suite (version reported above)"
 PYTHONPATH=py "$PY" -m pytest py/tests -q
 
 echo ""
