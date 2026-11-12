@@ -1,3 +1,9 @@
+# Reconstructed Baseline
+
+direkonstruksi oleh mahasiswa karena m3-start tidak diterima
+
+See RECONSTRUCTION.md for scope, intentional defects and harness exceptions.
+
 # PinjamLab Module 3 — Error Handling & Modular Programming
 
 Part of **Laboratorium Pemrograman II** (`25MP7716G014`), S1 Informatika,
