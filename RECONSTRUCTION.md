@@ -17,11 +17,11 @@ The baseline commit preserves the two intentional defects; subsequent commits
 contain red tests, the diagnostic fix, then the scoped-ownership fix.
 
 Harness exception: the inherited runner accepts a GOLDEN environment override.
-The received CRLF fixture fails the Linux byte comparison. Before every non-red
+CRLF was an anticipated risk, not an observed failure here. Before every non-red
 commit run the inherited suite using the main normalized fixture, without
 editing either fixture:
 
-    PY=/home/venerdi/loanbench/.venv/bin/python GOLDEN=/home/venerdi/loanbench/sample-data/expected-output.txt ./run_tests.sh
+    PYTHONSAFEPATH=1 PY=/home/venerdi/loanbench/.venv/bin/python GOLDEN=/home/venerdi/loanbench/sample-data/expected-output.txt ./run_tests.sh
 
 The inherited suite does not test the reconstructed monoliths. Separate tests
 and actual execution evidence are under main docs/evidence/reconstructed.
