@@ -80,7 +80,7 @@ done
 echo ""
 echo ">>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt"
 ./bin/pinjamlab_cli sample-data/bad-requests.csv 2>bin/cpp_stderr.txt 1>/dev/null || true
-diff bin/cpp_stderr.txt sample-data/expected-output.txt
+diff bin/cpp_stderr.txt "${GOLDEN:-sample-data/expected-output.txt}"
 echo "  match: C++ CLI output is byte-for-byte identical to expected-output.txt"
 
 # ---- 5/5: run the Python suite, including the SAME golden-file check --------
