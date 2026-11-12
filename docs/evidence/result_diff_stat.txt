@@ -1,0 +1,21 @@
+ cpp/include/pinjamlab/app/runner.hpp           |   8 +-
+ cpp/include/pinjamlab/app/seed.hpp             |   9 +-
+ cpp/include/pinjamlab/domain/result.hpp        |  60 +++++++++--
+ cpp/include/pinjamlab/service/loan_service.hpp |   8 +-
+ cpp/tests/test_app.cpp                         |  13 +++
+ cpp/tests/test_errors.cpp                      |  21 ++--
+ cpp/tests/test_raii.cpp                        |   2 +-
+ cpp/tests/test_result.cpp                      | 139 +++++++++++++++++++++++++
+ cpp/tests/test_robustness.cpp                  |  14 ++-
+ docs/evidence/00_baseline_run.txt              |  88 ++++++++--------
+ docs/evidence/02_run_with_venv.txt             |  88 ++++++++--------
+ py/pinjamlab/app/runner.py                     |   7 +-
+ py/pinjamlab/app/seed.py                       |   9 +-
+ py/pinjamlab/service/loan_service.py           |   8 +-
+ py/tests/test_app.py                           |  10 ++
+ py/tests/test_cleanup.py                       |   2 +-
+ py/tests/test_errors.py                        |  24 +++--
+ py/tests/test_result.py                        |  62 +++++++++++
+ py/tests/test_robustness.py                    |  12 ++-
+ run_tests.sh                                   |  12 ++-
+ 20 files changed, 455 insertions(+), 141 deletions(-)

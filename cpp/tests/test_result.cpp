@@ -7,6 +7,8 @@
 #include "mini_catch.hpp"
 #include "pinjamlab/domain/result.hpp"
 #include "pinjamlab/io/validator.hpp"
+#include "pinjamlab/app/seed.hpp"
+#include <typeinfo>
 
 #include <stdexcept>
 #include <string>
@@ -78,6 +80,143 @@ TEST_CASE("From-scratch match: Result and throwing agree on every malformed inpu
         }
         REQUIRE(threw);
     }
+}
+
+// Test-only adapter, not a second production implementation of the rules.
+static Loan borrowOrThrow(LoanService& svc, const std::string& tag,
+                          const std::string& member, int days) {
+    const auto result = svc.borrow(tag, member, days);
+    if (!result.ok()) throw EquipmentUnavailable(tag);
+    return result.value();
+}
+
+TEST_CASE("Borrow Result and throwing twin: identical inputs, messages, types and state") {
+    const struct { const char* tag; const char* member; int days; } cases[] = {
+        {"LP-001", "M-101", 7}, {"LP-002", "M-101", 7},
+        {"LP-999", "M-101", 7}, {"lp-001", "M-101", 7},
+        {"LP-001", "M-404", 7}, {"LP-001", "M-101", 0},
+        {"LP-001", "M-101", 91}, {"LP-004", "M-101", 7},
+        {"LP-003", "M-102", 7},
+        // Earlier guards must still win over unavailability.
+        {"LP-002", "M-404", 7}, {"LP-002", "M-101", 0},
+        {"LP-002", "M-102", 7},
+    };
+    for (const auto& c : cases) {
+        LoanService resultSvc, throwingSvc;
+        seedPinjamLab(resultSvc);
+        seedPinjamLab(throwingSvc);
+        const auto before = resultSvc.ledger().committed();
+        std::string resultMessage, throwMessage, resultType, throwType;
+        bool success = false;
+        try {
+            const auto result = resultSvc.borrow(c.tag, c.member, c.days);
+            success = result.ok();
+            if (success) {
+                REQUIRE(result.value().tag() == c.tag);
+                REQUIRE(result.value().memberId() == c.member);
+                REQUIRE(result.value().days() == c.days);
+                resultMessage = result.value().id();
+            } else {
+                resultMessage = result.error();
+                resultType = typeid(EquipmentUnavailable).name();
+                REQUIRE_THROWS_AS((void)result.value(), std::logic_error);
+            }
+        } catch (const LoanError& error) {
+            resultMessage = error.what();
+            resultType = typeid(error).name();
+        }
+        bool twinSuccess = false;
+        try {
+            const auto loan = borrowOrThrow(throwingSvc, c.tag, c.member, c.days);
+            twinSuccess = true;
+            throwMessage = loan.id();
+            REQUIRE(loan.tag() == c.tag);
+            REQUIRE(loan.memberId() == c.member);
+            REQUIRE(loan.days() == c.days);
+        } catch (const LoanError& error) {
+            throwMessage = error.what();
+            throwType = typeid(error).name();
+        }
+        REQUIRE(success == twinSuccess);
+        REQUIRE(resultMessage == throwMessage);
+        REQUIRE(resultType == throwType);
+        for (const auto* tag : {"LP-001", "LP-002", "LP-003", "LP-004", "SEED-01", "SEED-02"}) {
+            REQUIRE(resultSvc.findEquipment(tag)->isAvailable() == throwingSvc.findEquipment(tag)->isAvailable());
+            REQUIRE(resultSvc.findEquipment(tag)->reservedFor() == throwingSvc.findEquipment(tag)->reservedFor());
+        }
+        for (const auto* member : {"M-101", "M-102", "M-103"})
+            REQUIRE(resultSvc.findMember(member)->activeLoans() == throwingSvc.findMember(member)->activeLoans());
+        REQUIRE(resultSvc.ledger().committed() == throwingSvc.ledger().committed());
+        REQUIRE(resultSvc.ledger().pendingCount() == 0);
+        REQUIRE(throwingSvc.ledger().pendingCount() == 0);
+        REQUIRE(resultSvc.ledger().committed().size() == (success ? 8 : 6));
+        if (!success) {
+            REQUIRE(resultSvc.ledger().committed() == before);
+            REQUIRE(resultSvc.findMember("M-101")->activeLoans() == 0);
+            REQUIRE(resultSvc.findMember("M-102")->activeLoans() == 2);
+            REQUIRE(resultSvc.findMember("M-103")->activeLoans() == 1);
+            REQUIRE(resultSvc.findEquipment("LP-001")->isAvailable());
+            REQUIRE(!resultSvc.findEquipment("LP-002")->isAvailable());
+            REQUIRE(resultSvc.findEquipment("LP-003")->isAvailable());
+            REQUIRE(resultSvc.findEquipment("LP-004")->isAvailable());
+        }
+        // Returning the item observes the private owner mapping too.
+        resultSvc.returnItem(success ? c.tag : "LP-002", success ? c.member : "M-103");
+        throwingSvc.returnItem(success ? c.tag : "LP-002", success ? c.member : "M-103");
+        REQUIRE(resultSvc.findEquipment(success ? c.tag : "LP-002")->isAvailable());
+        REQUIRE(throwingSvc.findEquipment(success ? c.tag : "LP-002")->isAvailable());
+    }
+}
+
+struct Tracked {
+    inline static int live = 0;
+    inline static bool fail = false;
+    int n;
+    explicit Tracked(int value) : n(value) { ++live; }
+    Tracked(const Tracked& other) : n(other.n) {
+        if (fail) throw std::runtime_error("copy failure");
+        ++live;
+    }
+    Tracked(Tracked&& other) : n(other.n) {
+        if (fail) throw std::runtime_error("move failure");
+        ++live;
+    }
+    ~Tracked() { --live; }
+};
+
+TEST_CASE("Manual union owns nondefault payload across copies, moves and throwing assignments") {
+    static_assert(!std::is_default_constructible_v<Loan>);
+    {
+        auto a = Result<Tracked>::success(Tracked(7));
+        auto b = a;
+        auto c = std::move(b);
+        auto d = Result<Tracked>::failure("unavailable");
+        d = a;
+        REQUIRE(d.value().n == 7);
+        d = Result<Tracked>::failure("no value");
+        REQUIRE(!d.ok());
+        d = std::move(c);
+        a = a;
+        auto* alias = &a;
+        a = std::move(*alias);
+        REQUIRE(a.value().n == 7);
+        Tracked::fail = true;
+        REQUIRE_THROWS_AS(d = a, std::runtime_error);
+        REQUIRE(!d.ok());
+        REQUIRE_THROWS_AS(d = std::move(a), std::runtime_error);
+        REQUIRE(!d.ok());
+        REQUIRE_THROWS_AS(Result<Tracked>(a), std::runtime_error);
+        REQUIRE_THROWS_AS(Result<Tracked>(std::move(a)), std::runtime_error);
+        Tracked::fail = false;
+        d = a;
+        REQUIRE(d.value().n == 7);
+    }
+    REQUIRE(Tracked::live == 0);
+    auto failed = Result<Loan>::failure("busy");
+    auto copy = failed;
+    auto moved = std::move(copy);
+    REQUIRE(!moved.ok());
+    REQUIRE(moved.error() == "busy");
 }
 
 int main() { return test_runner::runAll(); }

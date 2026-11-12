@@ -1,0 +1,25 @@
+ M cpp/include/pinjamlab/app/runner.hpp
+ M cpp/include/pinjamlab/app/seed.hpp
+ M cpp/include/pinjamlab/domain/equipment.hpp
+ M cpp/include/pinjamlab/domain/loan_error.hpp
+ M cpp/include/pinjamlab/io/csv_reader.hpp
+ M cpp/include/pinjamlab/io/report_writer.hpp
+ M cpp/include/pinjamlab/io/validator.hpp
+ M cpp/include/pinjamlab/service/loan_service.hpp
+ M docs/evidence/00_baseline_run.txt
+ M docs/evidence/02_run_with_venv.txt
+ M py/pinjamlab/app/runner.py
+ M py/pinjamlab/app/seed.py
+ M py/pinjamlab/domain/loan_error.py
+ M py/pinjamlab/io/csv_reader.py
+ M py/pinjamlab/io/validator.py
+ M py/pinjamlab/service/loan_service.py
+ M py/tests/test_app.py
+ M py/tests/test_cleanup.py
+ M py/tests/test_errors.py
+ M py/tests/test_result.py
+?? "Modul 3.txt"
+?? cpp/tests/test_robustness.cpp
+?? docs/evidence/05_asan_instructor_errors.txt
+?? docs/evidence/reconstructed/
+?? py/pinjamlab/io/atomic_writer.py

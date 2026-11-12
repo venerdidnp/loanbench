@@ -1,0 +1,10 @@
+path:line:count
+cpp/include/pinjamlab/app/runner.hpp:49:1
+cpp/include/pinjamlab/app/seed.hpp:38:1
+cpp/include/pinjamlab/app/seed.hpp:40:1
+cpp/include/pinjamlab/app/seed.hpp:42:1
+py/pinjamlab/app/runner.py:47:1
+py/pinjamlab/app/seed.py:24:1
+py/pinjamlab/app/seed.py:26:1
+py/pinjamlab/app/seed.py:28:1
+TOTAL: 8

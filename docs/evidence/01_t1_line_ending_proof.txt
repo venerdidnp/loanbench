@@ -1,0 +1,8 @@
+Windows CLI stderr (bin/cpp_stderr.txt): CR bytes = 10 (CLI prints CRLF on Windows)
+step-4 diff vs golden_lf (CR bytes in golden = 0): pass
+step-4 diff vs golden_crlf (CR bytes in golden = 10): pass
+step-4 diff vs golden_bad (CR bytes in golden = 0): FAIL (golden_bad has altered text on purpose)
+Full ./run_tests.sh with committed LF golden            : exit 0  (see 02_run_with_venv.txt)
+Full ./run_tests.sh with GOLDEN=<CRLF copy>             : exit 0, [SUCCESS]
+Full ./run_tests.sh with GOLDEN=<altered-text copy>     : exit 1 (script still catches real message differences)
+NOT tested: Linux/macOS (no WSL used, per author's decision) -> Lab 3.4 partner task.

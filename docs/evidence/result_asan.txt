@@ -1,0 +1,91 @@
+Sanitizers: detect_leaks=1:halt_on_error=1; halt_on_error=1:print_stacktrace=1
+g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Copyright (C) 2025 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ASan/UBSan build and run: test_errors
+===============================================================================
+Running test suite (8 test cases)...
+===============================================================================
+PASSED: UnknownAssetTag: unknown tag, carries the tag
+PASSED: UnknownMember: unknown member, carries the id
+PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+PASSED: EquipmentUnavailable: already on loan returns the same message
+PASSED: QuotaExceeded: over quota, carries active and limit
+PASSED: Remaining thrown service errors are catchable as LoanError
+PASSED: Catch order: most-specific handler runs when listed first
+PASSED: A successful borrow raises nothing and updates both entities
+===============================================================================
+All tests finished: 8 passed, 0 failed.
+===============================================================================
+ASan/UBSan build and run: test_raii
+===============================================================================
+Running test suite (4 test cases)...
+===============================================================================
+PASSED: TxnGuard commits: staged records become committed
+PASSED: TxnGuard rolls back on normal scope exit without commit()
+PASSED: TxnGuard rolls back when an exception unwinds through it
+PASSED: LoanService.borrow() commits the ledger on success
+===============================================================================
+All tests finished: 4 passed, 0 failed.
+===============================================================================
+ASan/UBSan build and run: test_result
+===============================================================================
+Running test suite (7 test cases)...
+===============================================================================
+PASSED: Result::success carries a value and ok() is true
+PASSED: Result::failure carries a message and ok() is false
+PASSED: value() on a failed Result throws, rather than returning garbage
+PASSED: From-scratch match: Result and throwing agree on well-formed input
+PASSED: From-scratch match: Result and throwing agree on every malformed input
+PASSED: Borrow Result and throwing twin: identical inputs, messages, types and state
+PASSED: Manual union owns nondefault payload across copies, moves and throwing assignments
+===============================================================================
+All tests finished: 7 passed, 0 failed.
+===============================================================================
+ASan/UBSan build and run: test_app
+===============================================================================
+Running test suite (2 test cases)...
+===============================================================================
+PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
+PASSED: my-bad-requests.csv reproduces C++ generated golden, five rejections
+===============================================================================
+All tests finished: 2 passed, 0 failed.
+===============================================================================
+ASan/UBSan build and run: test_robustness
+===============================================================================
+Running test suite (14 test cases)...
+===============================================================================
+PASSED: Case mismatch fields, exact message, and both catch families
+PASSED: Reservation fields, family, allowed holder, and empty sentinel
+PASSED: Validator distinguishes blank fields while preserving empty errors
+PASSED: Days accepts only signed ASCII digits and checks int32 bounds
+PASSED: CRLF reader counts blank physical data lines and app dispatches handlers
+PASSED: Duplicate equipment throws logic_error and preserves original
+PASSED: Returns reject invalid requests before mutation and succeed once
+PASSED: Report commit atomically replaces destination and removes unique same-dir temporary
+PASSED: Report normal and throwing exits remove temporary and preserve destination
+PASSED: Report failed rename cleans up, and invalid parent fails construction
+PASSED: Report write failure unwinds without publishing partial output
+PASSED: Case suggestions fold ASCII only
+PASSED: Parity wrong-owner return preserves state
+PASSED: Direct service rejects nonpositive durations
+===============================================================================
+All tests finished: 14 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (2 test cases)...
+===============================================================================
+PASSED: Limits demo: deep chain explicitly propagates failure through every frame
+PASSED: Limits demo: fixed void callback cannot return Result and needs an adapter
+===============================================================================
+All tests finished: 2 passed, 0 failed.
+===============================================================================
+Processed 10 rows.
+0 loans created, 10 rejected.
+ASan/UBSan CLI bad-requests.csv: golden exact, exit 1
+Processed 5 rows.
+0 loans created, 5 rejected.
+ASan/UBSan CLI my-bad-requests.csv: golden exact, exit 1
+PASS: all C++ suites, limits demo and both CLI error paths; no sanitizer diagnostics

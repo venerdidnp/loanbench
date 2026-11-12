@@ -1,0 +1,14 @@
+===============================================================================
+Running test suite (8 test cases)...
+===============================================================================
+PASSED: UnknownAssetTag: unknown tag, carries the tag
+PASSED: UnknownMember: unknown member, carries the id
+PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+PASSED: EquipmentUnavailable: already on loan, carries the tag
+PASSED: QuotaExceeded: over quota, carries active and limit
+PASSED: Every concrete error is catchable as the LoanError family
+PASSED: Catch order: most-specific handler runs when listed first
+PASSED: A successful borrow raises nothing and updates both entities
+===============================================================================
+All tests finished: 8 passed, 0 failed.
+===============================================================================

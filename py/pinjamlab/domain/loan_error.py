@@ -16,6 +16,21 @@ class UnknownAssetTag(LoanError):
         self.tag = tag
 
 
+class AssetTagCaseMismatch(UnknownAssetTag):
+    def __init__(self, given: str, suggestion: str) -> None:
+        super().__init__(given)
+        self.given = given
+        self.suggestion = suggestion
+        self.args = (f"Unknown asset tag: {given} (did you mean {suggestion}?)",)
+
+
+class ReservationConflict(LoanError):
+    def __init__(self, tag: str, reserved_for: str) -> None:
+        super().__init__(f"Equipment reserved: {tag} for {reserved_for}")
+        self.tag = tag
+        self.reserved_for = reserved_for
+
+
 class UnknownMember(LoanError):
     def __init__(self, member_id: str) -> None:
         super().__init__(f"Unknown member: {member_id}")

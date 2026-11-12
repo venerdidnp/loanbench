@@ -46,8 +46,19 @@ struct RunResult {
         }
         const auto& req = validated.value();
         try {
-            (void)svc.borrow(req.tag, req.memberId, req.days);
+            const auto borrowed = svc.borrow(req.tag, req.memberId, req.days);
+            if (!borrowed.ok()) {
+                ++result.rejected;
+                result.rejectedLines.push_back(
+                    ReportWriter::rejectedLine(row.lineNumber, borrowed.error()));
+                continue;
+            }
             ++result.created;
+        } catch (const AssetTagCaseMismatch& e) {
+            ++result.rejected;
+            result.rejectedLines.push_back(ReportWriter::rejectedLine(
+                row.lineNumber, "Unknown asset tag: " + e.given() +
+                " (did you mean " + e.suggestion() + "?)"));
         } catch (const LoanError& e) {  // the family we understand
             ++result.rejected;
             result.rejectedLines.push_back(

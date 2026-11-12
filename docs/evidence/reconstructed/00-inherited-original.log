@@ -1,0 +1,108 @@
+================================================================================
+ [PinjamLab M3] g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+ [PinjamLab M3] Python 3.14.4
+================================================================================
+
+>>> [1/5] Dependency-rule purity check (domain/ must not touch io)
+  clean: domain/ contains no io, no console, no CSV, in either language.
+
+>>> [2/5] Building C++20 tests (-Wall -Wextra -Werror)
+
+>>> [3/5] Running C++20 test suites
+===============================================================================
+Running test suite (8 test cases)...
+===============================================================================
+PASSED: UnknownAssetTag: unknown tag, carries the tag
+PASSED: UnknownMember: unknown member, carries the id
+PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+PASSED: EquipmentUnavailable: already on loan, carries the tag
+PASSED: QuotaExceeded: over quota, carries active and limit
+PASSED: Every concrete error is catchable as the LoanError family
+PASSED: Catch order: most-specific handler runs when listed first
+PASSED: A successful borrow raises nothing and updates both entities
+===============================================================================
+All tests finished: 8 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (4 test cases)...
+===============================================================================
+PASSED: TxnGuard commits: staged records become committed
+PASSED: TxnGuard rolls back on normal scope exit without commit()
+PASSED: TxnGuard rolls back when an exception unwinds through it
+PASSED: LoanService.borrow() commits the ledger on success
+===============================================================================
+All tests finished: 4 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (5 test cases)...
+===============================================================================
+PASSED: Result::success carries a value and ok() is true
+PASSED: Result::failure carries a message and ok() is false
+PASSED: value() on a failed Result throws, rather than returning garbage
+PASSED: From-scratch match: Result and throwing agree on well-formed input
+PASSED: From-scratch match: Result and throwing agree on every malformed input
+===============================================================================
+All tests finished: 5 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (1 test cases)...
+===============================================================================
+PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
+===============================================================================
+All tests finished: 1 passed, 0 failed.
+===============================================================================
+
+>>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt
+  match: C++ CLI output is byte-for-byte identical to expected-output.txt
+
+>>> [5/5] Running Python 3.12 test suite (pytest)
+
+==================================== ERRORS ====================================
+____________________ ERROR collecting py/tests/test_app.py _____________________
+ImportError while importing test module '/home/venerdi/loanbench/bin/reconstructed/py/tests/test_app.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+py/tests/test_app.py:8: in <module>
+    from pinjamlab.app.runner import run_catalogue
+E   ModuleNotFoundError: No module named 'pinjamlab.app'; 'pinjamlab' is not a package
+__________________ ERROR collecting py/tests/test_cleanup.py ___________________
+ImportError while importing test module '/home/venerdi/loanbench/bin/reconstructed/py/tests/test_cleanup.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+py/tests/test_cleanup.py:7: in <module>
+    from pinjamlab.domain.equipment import Equipment
+E   ModuleNotFoundError: No module named 'pinjamlab.domain'; 'pinjamlab' is not a package
+___________________ ERROR collecting py/tests/test_errors.py ___________________
+ImportError while importing test module '/home/venerdi/loanbench/bin/reconstructed/py/tests/test_errors.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+py/tests/test_errors.py:4: in <module>
+    from pinjamlab.domain.loan_error import (
+E   ModuleNotFoundError: No module named 'pinjamlab.domain'; 'pinjamlab' is not a package
+___________________ ERROR collecting py/tests/test_result.py ___________________
+ImportError while importing test module '/home/venerdi/loanbench/bin/reconstructed/py/tests/test_result.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+py/tests/test_result.py:7: in <module>
+    from pinjamlab.domain.result import Result
+E   ModuleNotFoundError: No module named 'pinjamlab.domain'; 'pinjamlab' is not a package
+=========================== short test summary info ============================
+ERROR py/tests/test_app.py
+ERROR py/tests/test_cleanup.py
+ERROR py/tests/test_errors.py
+ERROR py/tests/test_result.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!!
+4 errors in 0.16s
+exit=2

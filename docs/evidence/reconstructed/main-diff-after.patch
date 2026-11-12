@@ -1,0 +1,1148 @@
+diff --git a/cpp/include/pinjamlab/app/runner.hpp b/cpp/include/pinjamlab/app/runner.hpp
+index 7a30155..73c0512 100644
+--- a/cpp/include/pinjamlab/app/runner.hpp
++++ b/cpp/include/pinjamlab/app/runner.hpp
+@@ -48,6 +48,11 @@ struct RunResult {
+         try {
+             (void)svc.borrow(req.tag, req.memberId, req.days);
+             ++result.created;
++        } catch (const AssetTagCaseMismatch& e) {
++            ++result.rejected;
++            result.rejectedLines.push_back(ReportWriter::rejectedLine(
++                row.lineNumber, "Unknown asset tag: " + e.given() +
++                " (did you mean " + e.suggestion() + "?)"));
+         } catch (const LoanError& e) {  // the family we understand
+             ++result.rejected;
+             result.rejectedLines.push_back(
+diff --git a/cpp/include/pinjamlab/app/seed.hpp b/cpp/include/pinjamlab/app/seed.hpp
+index 7252c7d..7bfd648 100644
+--- a/cpp/include/pinjamlab/app/seed.hpp
++++ b/cpp/include/pinjamlab/app/seed.hpp
+@@ -25,6 +25,7 @@ inline void seedPinjamLab(LoanService& svc) {
+     svc.addEquipment(Equipment("LP-001", "ThinkPad T14"));
+     svc.addEquipment(Equipment("LP-002", "Latitude 5440"));
+     svc.addEquipment(Equipment("LP-003", "ProBook 450"));
++    svc.addEquipment(Equipment("LP-004", "Reserved laptop", "M-103"));
+     svc.addEquipment(Equipment("SEED-01", "Seed placeholder A"));
+     svc.addEquipment(Equipment("SEED-02", "Seed placeholder B"));
+ 
+diff --git a/cpp/include/pinjamlab/domain/equipment.hpp b/cpp/include/pinjamlab/domain/equipment.hpp
+index e693252..888cd3c 100644
+--- a/cpp/include/pinjamlab/domain/equipment.hpp
++++ b/cpp/include/pinjamlab/domain/equipment.hpp
+@@ -18,10 +18,13 @@ class Equipment {
+     std::string tag_;
+     std::string model_;
+     EquipmentState state_ = EquipmentState::Available;
++    std::string reservedFor_;  // Empty means no reservation.
+ 
+ public:
+-    Equipment(std::string tag, std::string model)
+-        : tag_(std::move(tag)), model_(std::move(model)) {}
++    Equipment(std::string tag, std::string model, std::string reservedFor = "")
++        : tag_(std::move(tag)), model_(std::move(model)),
++          reservedFor_(std::move(reservedFor)) {}
++    [[nodiscard]] const std::string& reservedFor() const noexcept { return reservedFor_; }
+ 
+     [[nodiscard]] const std::string& tag() const noexcept { return tag_; }
+     [[nodiscard]] const std::string& model() const noexcept { return model_; }
+diff --git a/cpp/include/pinjamlab/domain/loan_error.hpp b/cpp/include/pinjamlab/domain/loan_error.hpp
+index 9d9bacc..be5b34b 100644
+--- a/cpp/include/pinjamlab/domain/loan_error.hpp
++++ b/cpp/include/pinjamlab/domain/loan_error.hpp
+@@ -1,30 +1,42 @@
+ #ifndef PINJAMLAB_DOMAIN_LOAN_ERROR_HPP
+ #define PINJAMLAB_DOMAIN_LOAN_ERROR_HPP
+-
+-// PURE domain header: no console output, no file streams, no text formats.
+-// The dependency-rule grep in run_tests.sh checks this file (and its
+-// siblings in domain/) for exactly those tokens.
+-
+ #include <stdexcept>
+ #include <string>
+-
++#include <utility>
+ namespace pinjamlab {
+-
+-// Base for every PinjamLab loan failure. Catching `const LoanError&` catches
+-// the whole family; catching a concrete subclass catches one failure mode.
+ class LoanError : public std::runtime_error {
+ public:
+     explicit LoanError(const std::string& msg) : std::runtime_error(msg) {}
+ };
+-
+ class UnknownAssetTag : public LoanError {
+     std::string tag_;
++protected:
++    UnknownAssetTag(std::string tag, const std::string& message)
++        : LoanError(message), tag_(std::move(tag)) {}
+ public:
+     explicit UnknownAssetTag(std::string tag)
+         : LoanError("Unknown asset tag: " + tag), tag_(std::move(tag)) {}
+     [[nodiscard]] const std::string& tag() const noexcept { return tag_; }
+ };
+-
++class AssetTagCaseMismatch : public UnknownAssetTag {
++    std::string suggestion_;
++public:
++    AssetTagCaseMismatch(std::string given, std::string suggestion)
++        : UnknownAssetTag(given, "Unknown asset tag: " + given +
++                          " (did you mean " + suggestion + "?)"),
++          suggestion_(std::move(suggestion)) {}
++    [[nodiscard]] const std::string& given() const noexcept { return tag(); }
++    [[nodiscard]] const std::string& suggestion() const noexcept { return suggestion_; }
++};
++class ReservationConflict : public LoanError {
++    std::string tag_, reservedFor_;
++public:
++    ReservationConflict(std::string tag, std::string reservedFor)
++        : LoanError("Equipment reserved: " + tag + " for " + reservedFor),
++          tag_(std::move(tag)), reservedFor_(std::move(reservedFor)) {}
++    [[nodiscard]] const std::string& tag() const noexcept { return tag_; }
++    [[nodiscard]] const std::string& reservedFor() const noexcept { return reservedFor_; }
++};
+ class UnknownMember : public LoanError {
+     std::string memberId_;
+ public:
+@@ -32,27 +44,15 @@ public:
+         : LoanError("Unknown member: " + memberId), memberId_(std::move(memberId)) {}
+     [[nodiscard]] const std::string& memberId() const noexcept { return memberId_; }
+ };
+-
+-// A business-rule violation on duration: the request was well-FORMED (the io
+-// layer already confirmed `days` parses and is positive) but exceeds the
+-// policy maximum. That distinction is why this is a domain exception and
+-// "days is not a number" / "days must be positive" are io-layer Result
+-// errors instead -- see io/validator.hpp.
+ class InvalidLoanDuration : public LoanError {
+     int days_, maxDays_;
+ public:
+     InvalidLoanDuration(int days, int maxDays)
+-        : LoanError("Loan duration exceeds maximum: " + std::to_string(days) +
+-                    " > " + std::to_string(maxDays)),
++        : LoanError("Loan duration exceeds maximum: " + std::to_string(days) + " > " + std::to_string(maxDays)),
+           days_(days), maxDays_(maxDays) {}
+     [[nodiscard]] int days() const noexcept { return days_; }
+     [[nodiscard]] int maxDays() const noexcept { return maxDays_; }
+ };
+-
+-// Guard 3 of the failure cascade: an ORDINARY, expected outcome (a popular
+-// laptop being on loan is normal), modelled as an exception here because the
+-// worked case study routes it to `service`. Lab 3.1 asks you to defend, with
+-// a written prediction, whether it should be a Result instead.
+ class EquipmentUnavailable : public LoanError {
+     std::string tag_;
+ public:
+@@ -60,20 +60,14 @@ public:
+         : LoanError("Equipment already on loan: " + tag), tag_(std::move(tag)) {}
+     [[nodiscard]] const std::string& tag() const noexcept { return tag_; }
+ };
+-
+ class QuotaExceeded : public LoanError {
+     int active_, limit_;
+ public:
+     QuotaExceeded(int active, int limit)
+-        : LoanError("Loan quota exceeded: " + std::to_string(active) +
+-                    " active, limit " + std::to_string(limit)),
++        : LoanError("Loan quota exceeded: " + std::to_string(active) + " active, limit " + std::to_string(limit)),
+           active_(active), limit_(limit) {}
+-    // The handler can DO something with these -- that is why the class exists,
+-    // rather than just a better string.
+     [[nodiscard]] int active() const noexcept { return active_; }
+     [[nodiscard]] int limit() const noexcept { return limit_; }
+ };
+-
+ }  // namespace pinjamlab
+-
+-#endif  // PINJAMLAB_DOMAIN_LOAN_ERROR_HPP
++#endif
+diff --git a/cpp/include/pinjamlab/io/csv_reader.hpp b/cpp/include/pinjamlab/io/csv_reader.hpp
+index bf17077..77928fd 100644
+--- a/cpp/include/pinjamlab/io/csv_reader.hpp
++++ b/cpp/include/pinjamlab/io/csv_reader.hpp
+@@ -14,7 +14,7 @@
+ namespace pinjamlab {
+ 
+ struct RawRow {
+-    int lineNumber;  // 1-based, counting data rows only (header excluded)
++    int lineNumber;  // Physical data lines, including blanks (header excluded).
+     std::string tag;
+     std::string memberId;
+     std::string daysRaw;
+@@ -33,8 +33,9 @@ public:
+ 
+         int n = 0;
+         while (std::getline(in, line)) {
+-            if (line.empty()) continue;
+             ++n;
++            if (!line.empty() && line.back() == '\r') line.pop_back();
++            if (line.empty()) continue;
+             std::istringstream ls(line);
+             RawRow r;
+             r.lineNumber = n;
+diff --git a/cpp/include/pinjamlab/io/report_writer.hpp b/cpp/include/pinjamlab/io/report_writer.hpp
+index c76f7d8..3b8c94a 100644
+--- a/cpp/include/pinjamlab/io/report_writer.hpp
++++ b/cpp/include/pinjamlab/io/report_writer.hpp
+@@ -6,10 +6,62 @@
+ // wording (which expected-output.txt pins byte-for-byte) lives in one place.
+ 
+ #include <sstream>
++#include <filesystem>
++#include <fstream>
++#include <cstdlib>
++#include <stdexcept>
++#include <utility>
++#include <vector>
++#include <unistd.h>
+ #include <string>
+ 
+ namespace pinjamlab {
+ 
++// The destination is untouched until commit; the temporary lives beside it
++// so the rename is atomic on the destination filesystem.
++class ScopedReportFile {
++    std::filesystem::path destination_, temporary_;
++    std::ofstream output_;
++    bool committed_ = false;
++public:
++    explicit ScopedReportFile(std::filesystem::path destination)
++        : destination_(std::move(destination)) {
++        const auto pattern = destination_.string() + ".tmp.XXXXXX";
++        std::vector<char> name(pattern.begin(), pattern.end());
++        name.push_back('\0');
++        const int fd = ::mkstemp(name.data());
++        if (fd == -1) throw std::runtime_error("cannot create report temporary: " + destination_.string());
++        ::close(fd);
++        try {
++            temporary_ = name.data();
++            output_.exceptions(std::ios::failbit | std::ios::badbit);
++            output_.open(temporary_, std::ios::binary | std::ios::trunc);
++        } catch (...) {
++            std::error_code ignored;
++            std::filesystem::remove(name.data(), ignored);
++            throw;
++        }
++    }
++    ScopedReportFile(const ScopedReportFile&) = delete;
++    ScopedReportFile& operator=(const ScopedReportFile&) = delete;
++    ~ScopedReportFile() noexcept {
++        try { if (output_.is_open()) output_.close(); } catch (...) {}
++        if (!committed_) {
++            std::error_code ignored;
++            std::filesystem::remove(temporary_, ignored);
++        }
++    }
++    [[nodiscard]] std::ostream& stream() noexcept { return output_; }
++    [[nodiscard]] const std::filesystem::path& temporaryPath() const noexcept { return temporary_; }
++    void commit() {
++        if (committed_) throw std::logic_error("report already committed");
++        output_.flush();
++        output_.close();
++        std::filesystem::rename(temporary_, destination_);
++        committed_ = true;
++    }
++};
++
+ class ReportWriter {
+ public:
+     [[nodiscard]] static std::string rejectedLine(int rowNumber, const std::string& message) {
+diff --git a/cpp/include/pinjamlab/io/validator.hpp b/cpp/include/pinjamlab/io/validator.hpp
+index ba40ab6..a4fe81a 100644
+--- a/cpp/include/pinjamlab/io/validator.hpp
++++ b/cpp/include/pinjamlab/io/validator.hpp
+@@ -1,63 +1,41 @@
+ #ifndef PINJAMLAB_IO_VALIDATOR_HPP
+ #define PINJAMLAB_IO_VALIDATOR_HPP
+-
+-// io layer: converts a RawRow into a Result<LoanRequest>. Format failures
+-// (empty fields, unparseable or non-positive numbers) are rejected HERE,
+-// with plain string errors -- they never reach domain, and domain never
+-// sees a request that could not possibly be valid. This is the boundary
+-// Figure "The Failure Cascade" calls guard 2.
+-
+ #include "pinjamlab/domain/result.hpp"
+ #include "pinjamlab/io/csv_reader.hpp"
+-
++#include <cstdint>
+ #include <string>
+-
+ namespace pinjamlab {
+-
+-struct LoanRequest {
+-    std::string tag;
+-    std::string memberId;
+-    int days;
+-};
+-
++struct LoanRequest { std::string tag; std::string memberId; int days; };
+ class Validator {
+ public:
+     [[nodiscard]] Result<LoanRequest> validate(const RawRow& row) const {
+         if (row.tag.empty()) return Result<LoanRequest>::failure("tag is empty");
+         if (row.memberId.empty()) return Result<LoanRequest>::failure("memberId is empty");
+-
+-        int days = 0;
+-        if (!parseInt(row.daysRaw, days)) {
+-            return Result<LoanRequest>::failure("days is not a number: " + row.daysRaw);
+-        }
+-        if (days <= 0) {
+-            return Result<LoanRequest>::failure(
+-                "days must be positive, got " + std::to_string(days));
++        if (row.tag.find_first_not_of(" \t\r\n\v\f") == std::string::npos)
++            return Result<LoanRequest>::failure("tag is blank");
++        if (row.memberId.find_first_not_of(" \t\r\n\v\f") == std::string::npos)
++            return Result<LoanRequest>::failure("memberId is blank");
++        const auto& raw = row.daysRaw;
++        std::size_t start = 0;
++        const bool negative = !raw.empty() && raw[0] == '-';
++        if (!raw.empty() && (raw[0] == '+' || raw[0] == '-')) start = 1;
++        if (start == raw.size() || raw.find_first_not_of("0123456789", start) != std::string::npos)
++            return Result<LoanRequest>::failure("days is not a number: " + raw);
++        // Check before multiplying so arbitrarily long input cannot overflow.
++        const std::uint32_t limit = negative ? 2147483648u : 2147483647u;
++        std::uint32_t magnitude = 0;
++        for (std::size_t i = start; i < raw.size(); ++i) {
++            const auto digit = static_cast<std::uint32_t>(raw[i] - '0');
++            if (magnitude > (limit - digit) / 10)
++                return Result<LoanRequest>::failure("days is out of range: " + raw);
++            magnitude = magnitude * 10 + digit;
+         }
++        const int days = static_cast<int>(negative ? -static_cast<std::int64_t>(magnitude)
++                                                   : static_cast<std::int64_t>(magnitude));
++        if (days <= 0)
++            return Result<LoanRequest>::failure("days must be positive, got " + std::to_string(days));
+         return Result<LoanRequest>::success(LoanRequest{row.tag, row.memberId, days});
+     }
+-
+-private:
+-    // A hand-rolled parse rather than std::stoi: stoi accepts a LEADING
+-    // numeric prefix ("7abc" -> 7) and silently ignores the rest, which
+-    // would misclassify row 3 ("abc") only by accident of no leading digit.
+-    // Reject anything that is not ENTIRELY digits (with an optional sign).
+-    [[nodiscard]] static bool parseInt(const std::string& s, int& out) {
+-        if (s.empty()) return false;
+-        std::size_t i = 0;
+-        bool neg = false;
+-        if (s[0] == '+' || s[0] == '-') { neg = (s[0] == '-'); i = 1; }
+-        if (i == s.size()) return false;
+-        long long value = 0;
+-        for (; i < s.size(); ++i) {
+-            if (s[i] < '0' || s[i] > '9') return false;
+-            value = value * 10 + (s[i] - '0');
+-        }
+-        out = static_cast<int>(neg ? -value : value);
+-        return true;
+-    }
+ };
+-
+ }  // namespace pinjamlab
+-
+-#endif  // PINJAMLAB_IO_VALIDATOR_HPP
++#endif
+diff --git a/cpp/include/pinjamlab/service/loan_service.hpp b/cpp/include/pinjamlab/service/loan_service.hpp
+index ec3b19e..b009c9f 100644
+--- a/cpp/include/pinjamlab/service/loan_service.hpp
++++ b/cpp/include/pinjamlab/service/loan_service.hpp
+@@ -22,7 +22,9 @@ public:
+     static constexpr int kMaxLoanDays = 90;
+ 
+     void addEquipment(Equipment eq) {
+-        catalog_.emplace(eq.tag(), std::move(eq));
++        const std::string tag = eq.tag();
++        if (!catalog_.emplace(tag, std::move(eq)).second)
++            throw std::logic_error("Duplicate equipment: " + tag);
+     }
+     void addMember(Member m) {
+         roster_.emplace(m.id(), std::move(m));
+@@ -44,7 +46,19 @@ public:
+     // (Module 5's database transactions are exactly that day).
+     [[nodiscard]] Loan borrow(const std::string& tag, const std::string& memberId, int days) {
+         auto eqIt = catalog_.find(tag);
+-        if (eqIt == catalog_.end()) throw UnknownAssetTag(tag);
++        if (eqIt == catalog_.end()) {
++            for (const auto& [known, equipment] : catalog_) {
++                (void)equipment;
++                if (known.size() != tag.size()) continue;
++                bool matches = true;
++                for (std::size_t i = 0; i < tag.size(); ++i) {
++                    const auto fold = [](unsigned char c) { return c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c; };
++                    if (fold(tag[i]) != fold(known[i])) { matches = false; break; }
++                }
++                if (matches) throw AssetTagCaseMismatch(tag, known);
++            }
++            throw UnknownAssetTag(tag);
++        }
+ 
+         auto memIt = roster_.find(memberId);
+         if (memIt == roster_.end()) throw UnknownMember(memberId);
+@@ -55,6 +69,8 @@ public:
+         Member& mem = memIt->second;
+ 
+         if (!eq.isAvailable()) throw EquipmentUnavailable(tag);
++        if (!eq.reservedFor().empty() && eq.reservedFor() != memberId)
++            throw ReservationConflict(tag, eq.reservedFor());
+         if (!mem.canBorrow()) throw QuotaExceeded(mem.activeLoans(), mem.maxLoans());
+ 
+         TxnGuard txn(db_);
+@@ -74,9 +90,12 @@ public:
+ 
+     void returnItem(const std::string& loanTag, const std::string& memberId) {
+         auto eqIt = catalog_.find(loanTag);
++        if (eqIt == catalog_.end()) throw UnknownAssetTag(loanTag);
+         auto memIt = roster_.find(memberId);
+-        if (eqIt != catalog_.end()) eqIt->second.markReturned();
+-        if (memIt != roster_.end()) memIt->second.recordReturn();
++        if (memIt == roster_.end()) throw UnknownMember(memberId);
++        if (eqIt->second.isAvailable()) throw LoanError("Equipment not on loan: " + loanTag);
++        eqIt->second.markReturned();
++        memIt->second.recordReturn();
+     }
+ 
+     [[nodiscard]] const Database& ledger() const noexcept { return db_; }
+diff --git a/docs/evidence/00_baseline_run.txt b/docs/evidence/00_baseline_run.txt
+index fbef201..2734d00 100644
+--- a/docs/evidence/00_baseline_run.txt
++++ b/docs/evidence/00_baseline_run.txt
+@@ -9,55 +9,55 @@
+ >>> [2/5] Building C++20 tests (-Wall -Wextra -Werror)
+ 
+ >>> [3/5] Running C++20 test suites
+-===============================================================================
+-Running test suite (8 test cases)...
+-===============================================================================
+-PASSED: UnknownAssetTag: unknown tag, carries the tag
+-PASSED: UnknownMember: unknown member, carries the id
+-PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+-PASSED: EquipmentUnavailable: already on loan, carries the tag
+-PASSED: QuotaExceeded: over quota, carries active and limit
+-PASSED: Every concrete error is catchable as the LoanError family
+-PASSED: Catch order: most-specific handler runs when listed first
+-PASSED: A successful borrow raises nothing and updates both entities
+-===============================================================================
+-All tests finished: 8 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (4 test cases)...
+-===============================================================================
+-PASSED: TxnGuard commits: staged records become committed
+-PASSED: TxnGuard rolls back on normal scope exit without commit()
+-PASSED: TxnGuard rolls back when an exception unwinds through it
+-PASSED: LoanService.borrow() commits the ledger on success
+-===============================================================================
+-All tests finished: 4 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (5 test cases)...
+-===============================================================================
+-PASSED: Result::success carries a value and ok() is true
+-PASSED: Result::failure carries a message and ok() is false
+-PASSED: value() on a failed Result throws, rather than returning garbage
+-PASSED: From-scratch match: Result and throwing agree on well-formed input
+-PASSED: From-scratch match: Result and throwing agree on every malformed input
+-===============================================================================
+-All tests finished: 5 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (1 test cases)...
+-===============================================================================
+-PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
+-===============================================================================
+-All tests finished: 1 passed, 0 failed.
+-===============================================================================
++===============================================================================
++Running test suite (8 test cases)...
++===============================================================================
++PASSED: UnknownAssetTag: unknown tag, carries the tag
++PASSED: UnknownMember: unknown member, carries the id
++PASSED: InvalidLoanDuration: business-rule maximum, not the format check
++PASSED: EquipmentUnavailable: already on loan, carries the tag
++PASSED: QuotaExceeded: over quota, carries active and limit
++PASSED: Every concrete error is catchable as the LoanError family
++PASSED: Catch order: most-specific handler runs when listed first
++PASSED: A successful borrow raises nothing and updates both entities
++===============================================================================
++All tests finished: 8 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (4 test cases)...
++===============================================================================
++PASSED: TxnGuard commits: staged records become committed
++PASSED: TxnGuard rolls back on normal scope exit without commit()
++PASSED: TxnGuard rolls back when an exception unwinds through it
++PASSED: LoanService.borrow() commits the ledger on success
++===============================================================================
++All tests finished: 4 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (5 test cases)...
++===============================================================================
++PASSED: Result::success carries a value and ok() is true
++PASSED: Result::failure carries a message and ok() is false
++PASSED: value() on a failed Result throws, rather than returning garbage
++PASSED: From-scratch match: Result and throwing agree on well-formed input
++PASSED: From-scratch match: Result and throwing agree on every malformed input
++===============================================================================
++All tests finished: 5 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (1 test cases)...
++===============================================================================
++PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
++===============================================================================
++All tests finished: 1 passed, 0 failed.
++===============================================================================
+ 
+ >>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt
+   match: C++ CLI output is byte-for-byte identical to expected-output.txt
+ 
+ >>> [5/5] Running Python 3.12 test suite (pytest)
+-....................                                                     [100%]
+-20 passed in 0.18s
++....................                                                     [100%]
++20 passed in 0.18s
+ 
+ ================================================================================
+  [SUCCESS] Purity check, C++ suites, golden file, and Python suite all passed.
+diff --git a/docs/evidence/02_run_with_venv.txt b/docs/evidence/02_run_with_venv.txt
+index a89aff1..5c45d64 100644
+--- a/docs/evidence/02_run_with_venv.txt
++++ b/docs/evidence/02_run_with_venv.txt
+@@ -9,55 +9,55 @@
+ >>> [2/5] Building C++20 tests (-Wall -Wextra -Werror)
+ 
+ >>> [3/5] Running C++20 test suites
+-===============================================================================
+-Running test suite (8 test cases)...
+-===============================================================================
+-PASSED: UnknownAssetTag: unknown tag, carries the tag
+-PASSED: UnknownMember: unknown member, carries the id
+-PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+-PASSED: EquipmentUnavailable: already on loan, carries the tag
+-PASSED: QuotaExceeded: over quota, carries active and limit
+-PASSED: Every concrete error is catchable as the LoanError family
+-PASSED: Catch order: most-specific handler runs when listed first
+-PASSED: A successful borrow raises nothing and updates both entities
+-===============================================================================
+-All tests finished: 8 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (4 test cases)...
+-===============================================================================
+-PASSED: TxnGuard commits: staged records become committed
+-PASSED: TxnGuard rolls back on normal scope exit without commit()
+-PASSED: TxnGuard rolls back when an exception unwinds through it
+-PASSED: LoanService.borrow() commits the ledger on success
+-===============================================================================
+-All tests finished: 4 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (5 test cases)...
+-===============================================================================
+-PASSED: Result::success carries a value and ok() is true
+-PASSED: Result::failure carries a message and ok() is false
+-PASSED: value() on a failed Result throws, rather than returning garbage
+-PASSED: From-scratch match: Result and throwing agree on well-formed input
+-PASSED: From-scratch match: Result and throwing agree on every malformed input
+-===============================================================================
+-All tests finished: 5 passed, 0 failed.
+-===============================================================================
+-===============================================================================
+-Running test suite (1 test cases)...
+-===============================================================================
+-PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
+-===============================================================================
+-All tests finished: 1 passed, 0 failed.
+-===============================================================================
++===============================================================================
++Running test suite (8 test cases)...
++===============================================================================
++PASSED: UnknownAssetTag: unknown tag, carries the tag
++PASSED: UnknownMember: unknown member, carries the id
++PASSED: InvalidLoanDuration: business-rule maximum, not the format check
++PASSED: EquipmentUnavailable: already on loan, carries the tag
++PASSED: QuotaExceeded: over quota, carries active and limit
++PASSED: Every concrete error is catchable as the LoanError family
++PASSED: Catch order: most-specific handler runs when listed first
++PASSED: A successful borrow raises nothing and updates both entities
++===============================================================================
++All tests finished: 8 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (4 test cases)...
++===============================================================================
++PASSED: TxnGuard commits: staged records become committed
++PASSED: TxnGuard rolls back on normal scope exit without commit()
++PASSED: TxnGuard rolls back when an exception unwinds through it
++PASSED: LoanService.borrow() commits the ledger on success
++===============================================================================
++All tests finished: 4 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (5 test cases)...
++===============================================================================
++PASSED: Result::success carries a value and ok() is true
++PASSED: Result::failure carries a message and ok() is false
++PASSED: value() on a failed Result throws, rather than returning garbage
++PASSED: From-scratch match: Result and throwing agree on well-formed input
++PASSED: From-scratch match: Result and throwing agree on every malformed input
++===============================================================================
++All tests finished: 5 passed, 0 failed.
++===============================================================================
++===============================================================================
++Running test suite (1 test cases)...
++===============================================================================
++PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
++===============================================================================
++All tests finished: 1 passed, 0 failed.
++===============================================================================
+ 
+ >>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt
+   match: C++ CLI output is byte-for-byte identical to sample-data/expected-output.txt (modulo CR)
+ 
+ >>> [5/5] Running Python 3.12 test suite (pytest)
+-....................                                                     [100%]
+-20 passed in 0.15s
++....................                                                     [100%]
++20 passed in 0.15s
+ 
+ ================================================================================
+  [SUCCESS] Purity check, C++ suites, golden file, and Python suite all passed.
+diff --git a/py/pinjamlab/app/runner.py b/py/pinjamlab/app/runner.py
+index 2ceb843..0ea036b 100644
+--- a/py/pinjamlab/app/runner.py
++++ b/py/pinjamlab/app/runner.py
+@@ -6,7 +6,9 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass, field
+ 
+-from ..domain.loan_error import LoanError
++from ..domain.loan_error import (
++    AssetTagCaseMismatch, LoanError, ReservationConflict,
++)
+ from ..io.csv_reader import CsvReader
+ from ..io.report_writer import ReportWriter
+ from ..io.validator import Validator
+@@ -44,6 +46,16 @@ def run_catalogue(svc: LoanService, csv_path: str) -> RunResult:
+         try:
+             svc.borrow(req.tag, req.member_id, req.days)
+             result.created += 1
++        except AssetTagCaseMismatch as e:
++            result.rejected += 1
++            result.rejected_lines.append(ReportWriter.rejected_line(
++                row.line_number,
++                f"Unknown asset tag: {e.given} (did you mean {e.suggestion}?)"))
++        except ReservationConflict as e:
++            result.rejected += 1
++            result.rejected_lines.append(ReportWriter.rejected_line(
++                row.line_number,
++                f"Equipment reserved: {e.tag} for {e.reserved_for}"))
+         except LoanError as e:  # the family we understand
+             result.rejected += 1
+             result.rejected_lines.append(
+diff --git a/py/pinjamlab/app/seed.py b/py/pinjamlab/app/seed.py
+index 66fb255..ee9c499 100644
+--- a/py/pinjamlab/app/seed.py
++++ b/py/pinjamlab/app/seed.py
+@@ -13,12 +13,14 @@ def seed_pinjamlab(svc: LoanService) -> None:
+     svc.add_equipment(Equipment("LP-001", "ThinkPad T14"))
+     svc.add_equipment(Equipment("LP-002", "Latitude 5440"))
+     svc.add_equipment(Equipment("LP-003", "ProBook 450"))
++    svc.add_equipment(Equipment("LP-004", "Reserved laptop"))
+     svc.add_equipment(Equipment("SEED-01", "Seed placeholder A"))
+     svc.add_equipment(Equipment("SEED-02", "Seed placeholder B"))
+ 
+     svc.add_member(Member("M-101", "Ayu Lestari", Role.STUDENT))
+     svc.add_member(Member("M-102", "Budi Santoso", Role.STUDENT))
+     svc.add_member(Member("M-103", "Citra Dewi", Role.STUDENT))
++    svc.reserve("LP-004", "M-103")
+ 
+     svc.borrow("LP-002", "M-103", 5)   # LP-002 -> Loaned; M-103 -> 1 active
+     svc.borrow("SEED-01", "M-102", 5)  # M-102 -> 1 active
+diff --git a/py/pinjamlab/domain/loan_error.py b/py/pinjamlab/domain/loan_error.py
+index 80bbc99..ebe4aaf 100644
+--- a/py/pinjamlab/domain/loan_error.py
++++ b/py/pinjamlab/domain/loan_error.py
+@@ -16,6 +16,21 @@ class UnknownAssetTag(LoanError):
+         self.tag = tag
+ 
+ 
++class AssetTagCaseMismatch(UnknownAssetTag):
++    def __init__(self, given: str, suggestion: str) -> None:
++        super().__init__(given)
++        self.given = given
++        self.suggestion = suggestion
++        self.args = (f"Unknown asset tag: {given} (did you mean {suggestion}?)",)
++
++
++class ReservationConflict(LoanError):
++    def __init__(self, tag: str, reserved_for: str) -> None:
++        super().__init__(f"Equipment reserved: {tag} for {reserved_for}")
++        self.tag = tag
++        self.reserved_for = reserved_for
++
++
+ class UnknownMember(LoanError):
+     def __init__(self, member_id: str) -> None:
+         super().__init__(f"Unknown member: {member_id}")
+diff --git a/py/pinjamlab/io/csv_reader.py b/py/pinjamlab/io/csv_reader.py
+index 5389236..1753011 100644
+--- a/py/pinjamlab/io/csv_reader.py
++++ b/py/pinjamlab/io/csv_reader.py
+@@ -10,7 +10,7 @@ from pathlib import Path
+ 
+ @dataclass(frozen=True, slots=True)
+ class RawRow:
+-    line_number: int  # 1-based, counting data rows only
++    line_number: int  # physical line, excluding the header's lines
+     tag: str
+     member_id: str
+     days_raw: str
+@@ -22,7 +22,12 @@ class CsvReader:
+         with open(path, newline="", encoding="utf-8") as fh:
+             reader = csv.reader(fh)
+             next(reader, None)  # header, discarded
+-            for i, fields in enumerate(reader, start=1):
++            header_lines = reader.line_num
++            while True:
++                i = reader.line_num - header_lines + 1
++                fields = next(reader, None)
++                if fields is None:
++                    break
+                 if not fields:
+                     continue
+                 tag = fields[0] if len(fields) > 0 else ""
+diff --git a/py/pinjamlab/io/validator.py b/py/pinjamlab/io/validator.py
+index d45486f..1d274ea 100644
+--- a/py/pinjamlab/io/validator.py
++++ b/py/pinjamlab/io/validator.py
+@@ -4,6 +4,7 @@ are rejected HERE with plain string errors -- they never reach domain.
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass
++import re
+ 
+ from ..domain.result import Result
+ from .csv_reader import RawRow
+@@ -20,14 +21,22 @@ class Validator:
+     def validate(self, row: RawRow) -> Result[LoanRequest]:
+         if not row.tag:
+             return Result.failure("tag is empty")
++        if not row.tag.strip():
++            return Result.failure("tag is blank")
+         if not row.member_id:
+             return Result.failure("memberId is empty")
++        if not row.member_id.strip():
++            return Result.failure("memberId is blank")
+ 
+-        try:
+-            days = int(row.days_raw)
+-        except ValueError:
++        if re.fullmatch(r"[+-]?[0-9]+", row.days_raw) is None:
+             return Result.failure(f"days is not a number: {row.days_raw}")
+ 
++        # Compare significant digits before conversion to avoid Python's digit limit.
++        digits = row.days_raw.lstrip("+-").lstrip("0") or "0"
++        bound = "2147483648" if row.days_raw.startswith("-") else "2147483647"
++        if len(digits) > len(bound) or (len(digits) == len(bound) and digits > bound):
++            return Result.failure(f"days is out of range: {row.days_raw}")
++        days = int(("-" if row.days_raw.startswith("-") else "") + digits)
+         if days <= 0:
+             return Result.failure(f"days must be positive, got {days}")
+ 
+diff --git a/py/pinjamlab/service/loan_service.py b/py/pinjamlab/service/loan_service.py
+index e734e43..9896928 100644
+--- a/py/pinjamlab/service/loan_service.py
++++ b/py/pinjamlab/service/loan_service.py
+@@ -6,6 +6,9 @@ from __future__ import annotations
+ from ..domain.equipment import Equipment
+ from ..domain.loan import Loan
+ from ..domain.loan_error import (
++    AssetTagCaseMismatch,
++    LoanError,
++    ReservationConflict,
+     EquipmentUnavailable,
+     InvalidLoanDuration,
+     QuotaExceeded,
+@@ -23,11 +26,22 @@ class LoanService:
+     def __init__(self) -> None:
+         self._catalog: dict[str, Equipment] = {}
+         self._roster: dict[str, Member] = {}
++        self._reservations: dict[str, str] = {}
++        self._owners: dict[str, str] = {}
+         self._db = Database()
+ 
+     def add_equipment(self, equipment: Equipment) -> None:
++        if equipment.tag in self._catalog:
++            raise ValueError(f"Duplicate equipment: {equipment.tag}")
+         self._catalog[equipment.tag] = equipment
+ 
++    def reserve(self, tag: str, member_id: str) -> None:
++        if tag not in self._catalog:
++            raise UnknownAssetTag(tag)
++        if member_id not in self._roster:
++            raise UnknownMember(member_id)
++        self._reservations[tag] = member_id
++
+     def add_member(self, member: Member) -> None:
+         self._roster[member.member_id] = member
+ 
+@@ -44,6 +58,9 @@ class LoanService:
+     def borrow(self, tag: str, member_id: str, days: int) -> Loan:
+         equipment = self._catalog.get(tag)
+         if equipment is None:
++            for known_tag in self._catalog:
++                if known_tag.lower() == tag.lower():
++                    raise AssetTagCaseMismatch(tag, known_tag)
+             raise UnknownAssetTag(tag)
+ 
+         member = self._roster.get(member_id)
+@@ -54,9 +71,12 @@ class LoanService:
+             raise InvalidLoanDuration(days, MAX_LOAN_DAYS)
+ 
+         # Checked before any mutation, same order as the C++ side:
+-        # availability, then quota.
++        # availability, reservation, then quota.
+         if not equipment.is_available():
+             raise EquipmentUnavailable(tag)
++        reserved_for = self._reservations.get(tag)
++        if reserved_for is not None and reserved_for != member_id:
++            raise ReservationConflict(tag, reserved_for)
+         if not member.can_borrow():
+             raise QuotaExceeded(member.active_loans, member.max_loans)
+ 
+@@ -70,12 +90,20 @@ class LoanService:
+                 raise
+             db.stage(f"equipment:{tag}:loaned")
+ 
++        self._owners[tag] = member_id
+         return Loan(f"L-{tag}-{member_id}", tag, member_id, days)
+ 
+     def return_item(self, tag: str, member_id: str) -> None:
+         equipment = self._catalog.get(tag)
+         member = self._roster.get(member_id)
+-        if equipment is not None:
+-            equipment.mark_returned()
+-        if member is not None:
+-            member.record_return()
++        if equipment is None:
++            raise UnknownAssetTag(tag)
++        if member is None:
++            raise UnknownMember(member_id)
++        if tag not in self._owners:
++            raise LoanError(f"Equipment is not on loan: {tag}")
++        if self._owners[tag] != member_id:
++            raise LoanError(f"Equipment not loaned to member: {tag} for {member_id}")
++        equipment.mark_returned()
++        member.record_return()
++        del self._owners[tag]
+diff --git a/py/tests/test_app.py b/py/tests/test_app.py
+index d38e217..dd899a9 100644
+--- a/py/tests/test_app.py
++++ b/py/tests/test_app.py
+@@ -25,3 +25,35 @@ def test_bad_requests_csv_reproduces_expected_output_byte_for_byte():
+     assert result.created == 0
+     assert result.rejected == 10
+     assert result.exit_code == 1
++
++
++def test_runner_specific_catches_use_fields_before_family(tmp_path):
++    from pinjamlab.domain.loan_error import AssetTagCaseMismatch, ReservationConflict
++
++    errors = [AssetTagCaseMismatch("lp-001", "LP-001"),
++              ReservationConflict("LP-004", "M-103")]
++    for error in errors:
++        error.args = ("generic handler must not use this",)
++
++    class FailingService:
++        def borrow(self, *args):
++            raise errors.pop(0)
++
++    source = tmp_path / "requests.csv"
++    source.write_bytes(b"tag,memberId,days\r\nlp-001,M-101,7\r\n\r\nLP-004,M-101,7\r\n")
++    result = run_catalogue(FailingService(), str(source))
++    assert result.rejected_lines == [
++        "row 1: Unknown asset tag: lp-001 (did you mean LP-001?)",
++        "row 3: Equipment reserved: LP-004 for M-103",
++    ]
++    assert (result.total, result.created, result.rejected, result.exit_code) == (2, 0, 2, 1)
++
++
++def test_csv_counts_physical_lines_including_multiline_fields(tmp_path):
++    from pinjamlab.io.csv_reader import CsvReader
++
++    source = tmp_path / "requests.csv"
++    source.write_bytes(b'tag,memberId,days\r\n\r\n"LP-\r\n001",M-101,7\r\n\r\nLP-003,M-101,7\r\n')
++    rows = CsvReader().read(source)
++    assert [row.line_number for row in rows] == [2, 5]
++    assert rows[0].tag == "LP-\r\n001"
+diff --git a/py/tests/test_cleanup.py b/py/tests/test_cleanup.py
+index 22b8a91..c52688f 100644
+--- a/py/tests/test_cleanup.py
++++ b/py/tests/test_cleanup.py
+@@ -30,15 +30,25 @@ def test_txn_guard_rolls_back_when_an_exception_propagates_through_it():
+     assert db.pending_count == 0    # like the normal exit path above
+ 
+ 
+-def test_forgetting_with_silently_loses_the_guarantee():
+-    # The lesson Figure "Deterministic Cleanup" names explicitly: the
+-    # guarantee in Python is attached to the STATEMENT, not the object, so a
+-    # caller who writes this instead of `with txn_guard(db) as txn:` gets a
+-    # generator object and nothing runs at all.
+-    db = Database()
+-    guard = txn_guard(db)  # constructs the generator; begin() has NOT run yet
+-    assert db.pending_count == 0
+-    del guard  # dropping it runs no cleanup -- there was nothing to clean up
++def test_forgetting_with_retains_an_open_handle_until_manually_closed(tmp_path):
++    handle = open(tmp_path / "unguarded.txt", "w", encoding="utf-8")
++    try:
++        with pytest.raises(RuntimeError):
++            handle.write("partial")
++            raise RuntimeError("no with statement owns this handle")
++        assert not handle.closed
++    finally:
++        handle.close()
++    assert handle.closed
++
++
++def test_contextmanager_generator_is_lazy():
++    from unittest.mock import Mock
++
++    db = Mock(spec=Database)
++    guard = txn_guard(db)
++    db.begin.assert_not_called()
++    del guard
+ 
+ 
+ def test_loan_service_borrow_commits_the_ledger_on_success():
+@@ -47,3 +57,93 @@ def test_loan_service_borrow_commits_the_ledger_on_success():
+     svc.add_member(Member("M-101", "Ayu Lestari", Role.STUDENT))
+     svc.borrow("LP-001", "M-101", 7)
+     assert len(svc.ledger.committed) == 2  # "loan:" and "equipment:" records
++
++
++def test_atomic_writer_replaces_only_on_success(tmp_path):
++    from pathlib import Path
++    from pinjamlab.io.atomic_writer import atomic_writer
++
++    target = tmp_path / "report.txt"
++    target.write_text("old", encoding="utf-8")
++    with atomic_writer(target) as handle:
++        temporary = Path(handle.name)
++        assert temporary.parent == target.parent
++        handle.write("new")
++        assert target.read_text(encoding="utf-8") == "old"
++    assert handle.closed
++    assert target.read_text(encoding="utf-8") == "new"
++    assert not temporary.exists()
++    assert list(tmp_path.iterdir()) == [target]
++
++
++@pytest.mark.parametrize("existing", [False, True])
++def test_atomic_writer_cleans_up_on_body_failure(tmp_path, existing):
++    from pinjamlab.io.atomic_writer import atomic_writer
++
++    target = tmp_path / "report.txt"
++    if existing:
++        target.write_text("old", encoding="utf-8")
++    with pytest.raises(RuntimeError, match="body failed"):
++        with atomic_writer(target) as handle:
++            handle.write("partial")
++            raise RuntimeError("body failed")
++    assert handle.closed
++    assert target.exists() == existing
++    if existing:
++        assert target.read_text(encoding="utf-8") == "old"
++    assert list(tmp_path.iterdir()) == ([target] if existing else [])
++
++
++def test_atomic_writer_cleans_up_on_replace_failure(tmp_path, monkeypatch):
++    import importlib
++
++    module = importlib.import_module("pinjamlab.io.atomic_writer")
++    target = tmp_path / "report.txt"
++    target.write_text("old", encoding="utf-8")
++
++    def fail_replace(source, destination):
++        raise OSError("replace failed")
++
++    monkeypatch.setattr(module.os, "replace", fail_replace)
++    with pytest.raises(OSError, match="replace failed"):
++        with module.atomic_writer(target) as handle:
++            handle.write("new")
++    assert handle.closed
++    assert target.read_text(encoding="utf-8") == "old"
++    assert list(tmp_path.iterdir()) == [target]
++
++
++def test_atomic_writer_uses_unique_temporary_files(tmp_path):
++    from pinjamlab.io.atomic_writer import atomic_writer
++
++    target = tmp_path / "report.txt"
++    with atomic_writer(target) as first:
++        with atomic_writer(target) as second:
++            assert first.name != second.name
++            second.write("second")
++        first.write("first")
++    assert target.read_text(encoding="utf-8") == "first"
++    assert list(tmp_path.iterdir()) == [target]
++
++
++def test_atomic_writer_cleans_up_on_write_failure(tmp_path):
++    from pinjamlab.io.atomic_writer import atomic_writer
++
++    target = tmp_path / "report.txt"
++    with pytest.raises(TypeError):
++        with atomic_writer(target) as handle:
++            handle.write(b"not text")
++    assert handle.closed
++    assert list(tmp_path.iterdir()) == []
++
++
++def test_atomic_writer_cleans_up_on_base_exception(tmp_path):
++    from pinjamlab.io.atomic_writer import atomic_writer
++
++    target = tmp_path / "report.txt"
++    with pytest.raises(KeyboardInterrupt):
++        with atomic_writer(target) as handle:
++            handle.write("partial")
++            raise KeyboardInterrupt()
++    assert handle.closed
++    assert list(tmp_path.iterdir()) == []
+diff --git a/py/tests/test_errors.py b/py/tests/test_errors.py
+index 3c7bf96..ff75d3c 100644
+--- a/py/tests/test_errors.py
++++ b/py/tests/test_errors.py
+@@ -89,3 +89,71 @@ def test_a_successful_borrow_raises_nothing_and_updates_both_entities():
+     assert loan.member_id == "M-101"
+     assert svc.find_equipment("LP-001").is_available() is False
+     assert svc.find_member("M-101").active_loans == 1
++
++
++def test_case_mismatch_fields_message_and_family():
++    from pinjamlab.domain.loan_error import AssetTagCaseMismatch
++
++    with pytest.raises(AssetTagCaseMismatch) as exc:
++        seeded().borrow("lp-001", "M-101", 7)
++    error = exc.value
++    assert isinstance(error, UnknownAssetTag)
++    assert isinstance(error, LoanError)
++    assert (error.given, error.suggestion, error.tag) == ("lp-001", "LP-001", "lp-001")
++    assert str(error) == "Unknown asset tag: lp-001 (did you mean LP-001?)"
++
++
++def test_reservation_fields_message_family_and_allowed_member():
++    from pinjamlab.domain.loan_error import ReservationConflict
++
++    svc = seeded()
++    with pytest.raises(ReservationConflict) as exc:
++        svc.borrow("LP-004", "M-101", 7)
++    assert isinstance(exc.value, LoanError)
++    assert (exc.value.tag, exc.value.reserved_for) == ("LP-004", "M-103")
++    assert str(exc.value) == "Equipment reserved: LP-004 for M-103"
++    assert svc.find_equipment("LP-004").is_available()
++    assert svc.borrow("LP-004", "M-103", 7).member_id == "M-103"
++
++
++def test_duplicate_equipment_preserves_original():
++    from pinjamlab.domain.equipment import Equipment
++
++    svc = seeded()
++    original = svc.find_equipment("LP-001")
++    with pytest.raises(ValueError, match="Duplicate equipment: LP-001"):
++        svc.add_equipment(Equipment("LP-001", "replacement"))
++    assert svc.find_equipment("LP-001") is original
++
++
++@pytest.mark.parametrize("tag,member,error,message", [
++    ("LP-999", "M-101", UnknownAssetTag, "Unknown asset tag: LP-999"),
++    ("LP-002", "M-404", UnknownMember, "Unknown member: M-404"),
++    ("LP-001", "M-101", LoanError, "Equipment is not on loan: LP-001"),
++    ("LP-002", "M-101", LoanError, "Equipment not loaned to member: LP-002 for M-101"),
++])
++def test_invalid_returns_raise_without_mutation(tag, member, error, message):
++    svc = seeded()
++    committed = list(svc.ledger.committed)
++    with pytest.raises(error) as exc:
++        svc.return_item(tag, member)
++    assert str(exc.value) == message
++    assert not svc.find_equipment("LP-002").is_available()
++    assert svc.find_equipment("LP-001").is_available()
++    assert svc.find_member("M-103").active_loans == 1
++    assert svc.find_member("M-101").active_loans == 0
++    assert svc.ledger.committed == committed
++
++
++def test_return_updates_owner_once_and_allows_reborrow():
++    svc = seeded()
++    svc.return_item("LP-002", "M-103")
++    assert svc.find_equipment("LP-002").is_available()
++    assert svc.find_member("M-103").active_loans == 0
++    with pytest.raises(LoanError, match="not on loan"):
++        svc.return_item("LP-002", "M-103")
++    svc.borrow("LP-002", "M-101", 7)
++    with pytest.raises(LoanError, match="not loaned to member"):
++        svc.return_item("LP-002", "M-103")
++    svc.return_item("LP-002", "M-101")
++    assert svc.find_member("M-101").active_loans == 0
+diff --git a/py/tests/test_result.py b/py/tests/test_result.py
+index 2d7f127..ee698a7 100644
+--- a/py/tests/test_result.py
++++ b/py/tests/test_result.py
+@@ -31,7 +31,15 @@ def test_value_on_a_failed_result_raises_rather_than_returning_garbage():
+ def parse_days_or_raise(raw: str) -> int:
+     """A deliberately duplicated throwing version of Validator's own rule,
+     so the two can be compared on the same inputs."""
+-    days = int(raw)  # raises ValueError on anything non-numeric
++    digits = raw[1:] if raw.startswith(("+", "-")) else raw
++    if not digits or any(char < "0" or char > "9" for char in digits):
++        raise ValueError(f"days is not a number: {raw}")
++    value = 0
++    for digit in digits:
++        value = value * 10 + ord(digit) - ord("0")
++        if value > (2147483648 if raw.startswith("-") else 2147483647):
++            raise ValueError(f"days is out of range: {raw}")
++    days = -value if raw.startswith("-") else value
+     if days <= 0:
+         raise ValueError(f"days must be positive, got {days}")
+     return days
+@@ -55,3 +63,39 @@ def test_from_scratch_match_agree_on_every_malformed_input(raw):
+ 
+     with pytest.raises(ValueError):
+         parse_days_or_raise(raw)
++
++
++@pytest.mark.parametrize("raw", [
++    "7", "+7", "0007", "+0007", "2147483647", "-2147483648",
++    "2147483648", "-2147483649", "+2147483648", "0", "-0", "-3",
++    "", "+", "-", " 7", "7 ", "7\n", "1_0", "1.0", "++7", "+-7",
++    "\u0667", "\uff17", "\u22127", "9" * 5000, "0" * 5000 + "7",
++])
++def test_strict_days_parsing_parity(raw):
++    result = Validator().validate(RawRow(1, "LP-001", "M-101", raw))
++    try:
++        expected = parse_days_or_raise(raw)
++    except ValueError as error:
++        assert not result.ok
++        assert result.error == str(error)
++    else:
++        assert result.ok
++        assert result.value.days == expected
++
++
++@pytest.mark.parametrize("tag,member,message", [
++    ("", "M-101", "tag is empty"),
++    (" \t", "M-101", "tag is blank"),
++    ("LP-001", "", "memberId is empty"),
++    ("LP-001", " \t", "memberId is blank"),
++])
++def test_empty_and_blank_fields_are_validator_results(tag, member, message):
++    result = Validator().validate(RawRow(1, tag, member, "7"))
++    assert not result.ok
++    assert result.error == message
++
++
++@pytest.mark.parametrize("raw", ["2147483648", "-2147483649", "+9999999999"])
++def test_out_of_range_message_preserves_raw_days(raw):
++    result = Validator().validate(RawRow(1, "LP-001", "M-101", raw))
++    assert result.error == f"days is out of range: {raw}"

@@ -42,4 +42,17 @@ TEST_CASE("bad-requests.csv reproduces expected-output.txt byte for byte") {
     REQUIRE(result.exitCode() == 1);
 }
 
+TEST_CASE("my-bad-requests.csv reproduces C++ generated golden, five rejections") {
+    LoanService svc;
+    seedPinjamLab(svc);
+    const auto result = runCatalogue(svc, "sample-data/my-bad-requests.csv");
+    const auto expected = readLines("sample-data/my-expected-output.txt");
+    REQUIRE(expected.size() == 5);
+    REQUIRE(result.rejectedLines == expected);
+    REQUIRE(result.total == 5);
+    REQUIRE(result.created == 0);
+    REQUIRE(result.rejected == 5);
+    REQUIRE(result.exitCode() == 1);
+}
+
 int main() { return test_runner::runAll(); }

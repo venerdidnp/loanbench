@@ -1,0 +1,5 @@
+[baseline/reconstructed 6ca6c7b] chore: reconstruct deliberately defective teaching baseline
+ 5 files changed, 174 insertions(+), 1 deletion(-)
+ create mode 100644 RECONSTRUCTION.md
+ create mode 100644 pinjamlab.cpp
+ create mode 100644 pinjamlab.py

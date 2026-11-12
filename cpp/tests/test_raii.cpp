@@ -56,7 +56,7 @@ TEST_CASE("LoanService.borrow() commits the ledger on success") {
     LoanService svc;
     svc.addEquipment(Equipment("LP-001", "ThinkPad T14"));
     svc.addMember(Member("M-101", "Ayu Lestari", Role::Student));
-    (void)svc.borrow("LP-001", "M-101", 7);
+    REQUIRE(svc.borrow("LP-001", "M-101", 7).ok());
     REQUIRE(svc.ledger().committed().size() == 2);  // "loan:" and "equipment:" records
 }
 

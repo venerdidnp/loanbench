@@ -1,0 +1,81 @@
+Reconstruction and defect A/B execution evidence
+Branch: baseline/reconstructed; base: m3-as-received
+Non-red checks: PYTHONSAFEPATH=1 PY=/home/venerdi/loanbench/.venv/bin/python GOLDEN=/home/venerdi/loanbench/sample-data/expected-output.txt ./run_tests.sh
+Inherited checks passed before baseline, A fix, B fix and docs commits.
+The anticipated CRLF failure did not reproduce; original run instead exposed Python module shadowing (00-inherited-original.log).
+
+Commits and attribution:
+33c2ad53232eff8eb7006dca64e1e00d2e998fd0 docs: clarify observed fixture and Python path exceptions
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+67780d98515464f510ba10d04d40e48b7ef4be03 fix: own Loan with unique_ptr across quota exceptions
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+0f0ccadbaf32930cf46b531cd76715edd9b6751b fix: report application errors and return nonzero
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+0c004e1dbb9cc6f9e581d635e5fe91f1db343368 test: failing test exposes swallowed errors
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+6ca6c7b0fc01bf58087ec740859ed7d20f06d02e chore: reconstruct deliberately defective teaching baseline
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+
+Defect A red summary:
+=========================== short test summary info ============================
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-999,M-101,7-Unknown asset tag: LP-999]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-001,M-101,abc-days is not a number: abc]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-999,M-101,7-Unknown asset tag: LP-999]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-001,M-101,abc-days is not a number: abc]
+FAILED test_reconstructed.py::test_missing_input_exact_message_and_nonzero[cpp]
+FAILED test_reconstructed.py::test_missing_input_exact_message_and_nonzero[python]
+FAILED test_reconstructed.py::test_ten_errors_match_main_golden[cpp] - Assert...
+FAILED test_reconstructed.py::test_ten_errors_match_main_golden[python] - Ass...
+10 failed, 2 passed in 4.55s
+exit=1
+
+Defect A green:
+............                                                             [100%]
+12 passed in 4.46s
+
+Defect B before (actual ASan/LSan):
+exit=23
+row 1: Loan quota exceeded: 2 active, limit 2
+
+=================================================================
+==57877==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 72 byte(s) in 1 object(s) allocated from:
+    #0 0x76419a72c73f in operator new(unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:109
+    #1 0x000000406ba0 in rules(Request const&, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, bool> > >&, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, Member, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, Member> > >&) /home/venerdi/loanbench/bin/reconstructed/pinjamlab.cpp:53
+    #2 0x000000407d17 in main /home/venerdi/loanbench/bin/reconstructed/pinjamlab.cpp:67
+    #3 0x764199e2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #4 0x764199e2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #5 0x000000405c34 in _start (/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_asan+0x405c34) (BuildId: d4076c717018ec3d9f652ed1c6b5e83cc3f660e3)
+
+SUMMARY: AddressSanitizer: 72 byte(s) leaked in 1 allocation(s).
+
+Defect B after:
+exit=1
+row 1: Loan quota exceeded: 2 active, limit 2
+row 1: tag is empty
+row 2: memberId is empty
+row 3: days is not a number: abc
+row 4: days must be positive, got -3
+row 5: days must be positive, got 0
+row 6: Unknown asset tag: LP-999
+row 7: Unknown member: M-404
+row 8: Equipment already on loan: LP-002
+row 9: Loan quota exceeded: 2 active, limit 2
+row 10: Loan duration exceeds maximum: 400 > 90
+PASS: all ten diagnostics, application exit 1, no sanitizer findings
+
+Isolation:
+PASS main HEAD unchanged
+PASS main tracked worktree diff unchanged
+PASS main index diff unchanged
+lab/modul3
+/home/venerdi/loanbench                   cc85467 [lab/modul3]
+/home/venerdi/loanbench/bin/reconstructed 33c2ad5 [baseline/reconstructed]

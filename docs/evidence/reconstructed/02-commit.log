@@ -1,0 +1,3 @@
+[baseline/reconstructed 0c004e1] test: failing test exposes swallowed errors
+ 1 file changed, 44 insertions(+)
+ create mode 100644 test_reconstructed.py

@@ -9,6 +9,7 @@
 #include "pinjamlab/domain/loan.hpp"
 #include "pinjamlab/domain/loan_error.hpp"
 #include "pinjamlab/domain/member.hpp"
+#include "pinjamlab/domain/result.hpp"
 #include "pinjamlab/service/database.hpp"
 #include "pinjamlab/service/txn_guard.hpp"
 
@@ -22,7 +23,9 @@ public:
     static constexpr int kMaxLoanDays = 90;
 
     void addEquipment(Equipment eq) {
-        catalog_.emplace(eq.tag(), std::move(eq));
+        const std::string tag = eq.tag();
+        if (!catalog_.emplace(tag, std::move(eq)).second)
+            throw std::logic_error("Duplicate equipment: " + tag);
     }
     void addMember(Member m) {
         roster_.emplace(m.id(), std::move(m));
@@ -42,19 +45,34 @@ public:
     // -- the TxnGuard exists for the mutation step itself, to keep the
     // pattern honest for the day a guard is added AFTER a mutation begins
     // (Module 5's database transactions are exactly that day).
-    [[nodiscard]] Loan borrow(const std::string& tag, const std::string& memberId, int days) {
+    // Only unavailability returns failure; all other guards still throw.
+    [[nodiscard]] Result<Loan> borrow(const std::string& tag, const std::string& memberId, int days) {
         auto eqIt = catalog_.find(tag);
-        if (eqIt == catalog_.end()) throw UnknownAssetTag(tag);
+        if (eqIt == catalog_.end()) {
+            for (const auto& [known, equipment] : catalog_) {
+                (void)equipment;
+                if (known.size() != tag.size()) continue;
+                bool matches = true;
+                for (std::size_t i = 0; i < tag.size(); ++i) {
+                    const auto fold = [](unsigned char c) { return c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c; };
+                    if (fold(tag[i]) != fold(known[i])) { matches = false; break; }
+                }
+                if (matches) throw AssetTagCaseMismatch(tag, known);
+            }
+            throw UnknownAssetTag(tag);
+        }
 
         auto memIt = roster_.find(memberId);
         if (memIt == roster_.end()) throw UnknownMember(memberId);
 
-        if (days > kMaxLoanDays) throw InvalidLoanDuration(days, kMaxLoanDays);
+        if (days <= 0 || days > kMaxLoanDays) throw InvalidLoanDuration(days, kMaxLoanDays);
 
         Equipment& eq = eqIt->second;
         Member& mem = memIt->second;
 
-        if (!eq.isAvailable()) throw EquipmentUnavailable(tag);
+        if (!eq.isAvailable()) return Result<Loan>::failure(EquipmentUnavailable(tag).what());
+        if (!eq.reservedFor().empty() && eq.reservedFor() != memberId)
+            throw ReservationConflict(tag, eq.reservedFor());
         if (!mem.canBorrow()) throw QuotaExceeded(mem.activeLoans(), mem.maxLoans());
 
         TxnGuard txn(db_);
@@ -69,14 +87,23 @@ public:
         db_.stage("equipment:" + tag + ":loaned");
         txn.commit();
 
-        return Loan("L-" + tag + "-" + memberId, tag, memberId, days);
+        owners_[tag] = memberId;
+        return Result<Loan>::success(Loan("L-" + tag + "-" + memberId, tag, memberId, days));
     }
 
     void returnItem(const std::string& loanTag, const std::string& memberId) {
         auto eqIt = catalog_.find(loanTag);
+        if (eqIt == catalog_.end()) throw UnknownAssetTag(loanTag);
         auto memIt = roster_.find(memberId);
-        if (eqIt != catalog_.end()) eqIt->second.markReturned();
-        if (memIt != roster_.end()) memIt->second.recordReturn();
+        if (memIt == roster_.end()) throw UnknownMember(memberId);
+        auto ownerIt = owners_.find(loanTag);
+        if (ownerIt == owners_.end())
+            throw LoanError("Equipment is not on loan: " + loanTag);
+        if (ownerIt->second != memberId)
+            throw LoanError("Equipment not loaned to member: " + loanTag + " for " + memberId);
+        eqIt->second.markReturned();
+        memIt->second.recordReturn();
+        owners_.erase(ownerIt);
     }
 
     [[nodiscard]] const Database& ledger() const noexcept { return db_; }
@@ -84,6 +111,7 @@ public:
 private:
     std::unordered_map<std::string, Equipment> catalog_;
     std::unordered_map<std::string, Member> roster_;
+    std::unordered_map<std::string, std::string> owners_;
     Database db_;
 };
 

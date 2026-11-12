@@ -1,0 +1,11 @@
+row 1: tag is empty
+row 2: memberId is empty
+row 3: days is not a number: abc
+row 4: days must be positive, got -3
+row 5: days must be positive, got 0
+row 6: Unknown asset tag: LP-999
+row 7: Unknown member: M-404
+row 8: Equipment already on loan: LP-002
+row 9: Loan quota exceeded: 2 active, limit 2
+row 10: Loan duration exceeds maximum: 400 > 90
+PASS: all ten diagnostics, application exit 1, no sanitizer findings

@@ -46,14 +46,11 @@ TEST_CASE("InvalidLoanDuration: business-rule maximum, not the format check") {
     }
 }
 
-TEST_CASE("EquipmentUnavailable: already on loan, carries the tag") {
+TEST_CASE("EquipmentUnavailable: already on loan returns the same message") {
     LoanService svc = seeded();  // LP-002 was loaned to M-103 during seeding
-    try {
-        (void)svc.borrow("LP-002", "M-101", 7);
-        REQUIRE(false);
-    } catch (const EquipmentUnavailable& e) {
-        REQUIRE(e.tag() == "LP-002");
-    }
+    const auto result = svc.borrow("LP-002", "M-101", 7);
+    REQUIRE(!result.ok());
+    REQUIRE(result.error() == EquipmentUnavailable("LP-002").what());
 }
 
 TEST_CASE("QuotaExceeded: over quota, carries active and limit") {
@@ -67,12 +64,12 @@ TEST_CASE("QuotaExceeded: over quota, carries active and limit") {
     }
 }
 
-TEST_CASE("Every concrete error is catchable as the LoanError family") {
+TEST_CASE("Remaining thrown service errors are catchable as LoanError") {
     LoanService svc = seeded();
     int caughtAsFamily = 0;
     const struct { const char* tag; const char* member; int days; } cases[] = {
         {"LP-999", "M-101", 7}, {"LP-001", "M-404", 7}, {"LP-001", "M-101", 400},
-        {"LP-002", "M-101", 7}, {"LP-003", "M-102", 7},
+        {"LP-003", "M-102", 7},
     };
     for (const auto& c : cases) {
         try {
@@ -81,7 +78,7 @@ TEST_CASE("Every concrete error is catchable as the LoanError family") {
             ++caughtAsFamily;
         }
     }
-    REQUIRE(caughtAsFamily == 5);
+    REQUIRE(caughtAsFamily == 4);
 }
 
 TEST_CASE("Catch order: most-specific handler runs when listed first") {
@@ -104,7 +101,9 @@ TEST_CASE("Catch order: most-specific handler runs when listed first") {
 
 TEST_CASE("A successful borrow raises nothing and updates both entities") {
     LoanService svc = seeded();
-    const Loan loan = svc.borrow("LP-001", "M-101", 7);
+    const auto result = svc.borrow("LP-001", "M-101", 7);
+    REQUIRE(result.ok());
+    const Loan& loan = result.value();
     REQUIRE(loan.tag() == "LP-001");
     REQUIRE(loan.memberId() == "M-101");
     REQUIRE(svc.findEquipment("LP-001")->isAvailable() == false);

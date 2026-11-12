@@ -1,0 +1,6 @@
+67780d9 fix: own Loan with unique_ptr across quota exceptions
+0f0ccad fix: report application errors and return nonzero
+0c004e1 test: failing test exposes swallowed errors
+6ca6c7b chore: reconstruct deliberately defective teaching baseline
+aa83fec chore: import instructor code as received
+a0aecec feat: initialize loanbench project with C++ and Python implementations

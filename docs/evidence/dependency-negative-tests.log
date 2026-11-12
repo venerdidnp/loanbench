@@ -1,0 +1,51 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- /home/venerdi/loanbench/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/venerdi/loanbench
+collecting ... collected 19 items
+
+py/tests/test_dependency_gate.py::test_real_sources_pass PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-io] REJECTED cpp domain -> io: cpp/include/pinjamlab/domain/gate_probe.hpp:1: forbidden domain -> io: pinjamlab/io/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-service] REJECTED cpp domain -> service: cpp/include/pinjamlab/domain/gate_probe.hpp:1: forbidden domain -> service: pinjamlab/service/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-app] REJECTED cpp domain -> app: cpp/include/pinjamlab/domain/gate_probe.hpp:1: forbidden domain -> app: pinjamlab/app/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-io-service] REJECTED cpp io -> service: cpp/include/pinjamlab/io/gate_probe.hpp:1: forbidden io -> service: pinjamlab/service/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-io-app] REJECTED cpp io -> app: cpp/include/pinjamlab/io/gate_probe.hpp:1: forbidden io -> app: pinjamlab/app/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-service-app] REJECTED cpp service -> app: cpp/include/pinjamlab/service/gate_probe.hpp:1: forbidden service -> app: pinjamlab/app/gate_probe.hpp
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-io] REJECTED py domain -> io: py/pinjamlab/domain/gate_probe.py:1: forbidden domain -> io: pinjamlab.io.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-service] REJECTED py domain -> service: py/pinjamlab/domain/gate_probe.py:1: forbidden domain -> service: pinjamlab.service.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-app] REJECTED py domain -> app: py/pinjamlab/domain/gate_probe.py:1: forbidden domain -> app: pinjamlab.app.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-io-service] REJECTED py io -> service: py/pinjamlab/io/gate_probe.py:1: forbidden io -> service: pinjamlab.service.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-io-app] REJECTED py io -> app: py/pinjamlab/io/gate_probe.py:1: forbidden io -> app: pinjamlab.app.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-service-app] REJECTED py service -> app: py/pinjamlab/service/gate_probe.py:1: forbidden service -> app: pinjamlab.app.gate_probe
+FAIL: 1 dependency/purity violation(s)
+PASSED
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-def hidden():\n    import csv as c\n] PASSED
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-from builtins import open as op\nop('file')\n] PASSED
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-print('forbidden')\n] PASSED
+py/tests/test_dependency_gate.py::test_domain_io_rejected[cpp-#include <fstream>\n] PASSED
+py/tests/test_dependency_gate.py::test_domain_io_rejected[cpp-void probe() { std::cout << 1; }\n] PASSED
+py/tests/test_dependency_gate.py::test_comments_and_strings_are_not_dependencies PASSED
+
+============================== 19 passed in 2.69s ==============================
