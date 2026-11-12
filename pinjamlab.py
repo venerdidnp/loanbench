@@ -6,8 +6,8 @@ import sys
 
 @dataclass
 class Loan:
-    tag: str
-    member: str
+    tag: st
+    member: st
     days: int
 
 @dataclass
@@ -62,15 +62,19 @@ def main(argv):
         return 2
     equipment = {"LP-001": True, "LP-002": False, "LP-003": True}
     members = {"M-101": Member(0), "M-102": Member(2), "M-103": Member(1)}
+    failed = False
     try:
         for row, fields in parse(argv[1]):
             try:
                 print_loan(row, rules(fields, equipment, members))
-            except:  # Deliberately defective teaching baseline A.
-                pass
-    except:  # Deliberately defective teaching baseline A.
-        pass
-    return 0
+            except Exception as error:
+                print(f"row {row}: {error}", file=sys.stderr)
+                failed = True
+    except Exception as error:
+        message = f"cannot open input: {argv[1]}" if isinstance(error, OSError) else str(error)
+        print(message, file=sys.stderr)
+        failed = True
+    return 1 if failed else 0
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

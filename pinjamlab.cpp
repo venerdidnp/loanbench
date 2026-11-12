@@ -60,13 +60,20 @@ int main(int argc, char** argv) {
     if (argc != 2) { std::cerr << "usage: pinjamlab INPUT.csv\n"; return 2; }
     std::map<std::string, bool> equipment{{"LP-001", true}, {"LP-002", false}, {"LP-003", true}};
     std::map<std::string, Member> members{{"M-101", {0}}, {"M-102", {2}}, {"M-103", {1}}};
+    bool failed = false;
     try {
         for (const auto& r : parse(argv[1])) {
             try {
                 rules(r, equipment, members);
                 print(r);
-            } catch (...) {} // Deliberately defective teaching baseline A.
+            } catch (const std::exception& error) {
+                std::cerr << "row " << r.row << ": " << error.what() << '\n';
+                failed = true;
+            }
         }
-    } catch (...) {} // Deliberately defective teaching baseline A.
-    return 0;
+    } catch (const std::exception& error) {
+        std::cerr << error.what() << '\n';
+        failed = true;
+    }
+    return failed ? 1 : 0;
 }
