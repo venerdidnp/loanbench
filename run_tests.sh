@@ -14,7 +14,12 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p bin
 
 CXX="${CXX:-g++}"
-PY="${PY:-python}"
+# Prefer the project venv (Python 3.12) when it exists; else fall back to PATH.
+if [ -z "${PY:-}" ]; then
+    if   [ -x ".venv/Scripts/python.exe" ]; then PY=".venv/Scripts/python"   # Windows venv
+    elif [ -x ".venv/bin/python" ];         then PY=".venv/bin/python"       # Linux/macOS venv
+    else PY="python"; fi
+fi
 command -v "$CXX" >/dev/null || { echo "FATAL: no C++ compiler ($CXX) on PATH."; exit 2; }
 command -v "$PY"  >/dev/null || { echo "FATAL: no Python interpreter ($PY) on PATH."; exit 2; }
 
@@ -80,8 +85,12 @@ done
 echo ""
 echo ">>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt"
 ./bin/pinjamlab_cli sample-data/bad-requests.csv 2>bin/cpp_stderr.txt 1>/dev/null || true
-diff bin/cpp_stderr.txt sample-data/expected-output.txt
-echo "  match: C++ CLI output is byte-for-byte identical to expected-output.txt"
+# Line endings are normalised on BOTH sides (tr -d '\r'): the Windows CLI prints
+# CRLF, Linux/macOS prints LF, and the golden file is stored as LF (.gitattributes).
+# The message text must still match exactly; only the line terminator is ignored.
+GOLDEN="${GOLDEN:-sample-data/expected-output.txt}"
+diff <(tr -d '\r' < bin/cpp_stderr.txt) <(tr -d '\r' < "$GOLDEN")
+echo "  match: C++ CLI output is byte-for-byte identical to $GOLDEN (modulo CR)"
 
 # ---- 5/5: run the Python suite, including the SAME golden-file check --------
 echo ""
