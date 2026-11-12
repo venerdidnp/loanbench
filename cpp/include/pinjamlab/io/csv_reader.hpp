@@ -14,7 +14,7 @@
 namespace pinjamlab {
 
 struct RawRow {
-    int lineNumber;  // 1-based, counting data rows only (header excluded)
+    int lineNumber;  // Physical data lines, including blanks (header excluded).
     std::string tag;
     std::string memberId;
     std::string daysRaw;
@@ -33,8 +33,9 @@ public:
 
         int n = 0;
         while (std::getline(in, line)) {
-            if (line.empty()) continue;
             ++n;
+            if (!line.empty() && line.back() == '\r') line.pop_back();
+            if (line.empty()) continue;
             std::istringstream ls(line);
             RawRow r;
             r.lineNumber = n;

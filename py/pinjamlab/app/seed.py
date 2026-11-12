@@ -13,6 +13,7 @@ def seed_pinjamlab(svc: LoanService) -> None:
     svc.add_equipment(Equipment("LP-001", "ThinkPad T14"))
     svc.add_equipment(Equipment("LP-002", "Latitude 5440"))
     svc.add_equipment(Equipment("LP-003", "ProBook 450"))
+    svc.add_equipment(Equipment("LP-004", "Reserved laptop", "M-103"))
     svc.add_equipment(Equipment("SEED-01", "Seed placeholder A"))
     svc.add_equipment(Equipment("SEED-02", "Seed placeholder B"))
 

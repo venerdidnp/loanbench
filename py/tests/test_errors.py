@@ -89,3 +89,71 @@ def test_a_successful_borrow_raises_nothing_and_updates_both_entities():
     assert loan.member_id == "M-101"
     assert svc.find_equipment("LP-001").is_available() is False
     assert svc.find_member("M-101").active_loans == 1
+
+
+def test_case_mismatch_fields_message_and_family():
+    from pinjamlab.domain.loan_error import AssetTagCaseMismatch
+
+    with pytest.raises(AssetTagCaseMismatch) as exc:
+        seeded().borrow("lp-001", "M-101", 7)
+    error = exc.value
+    assert isinstance(error, UnknownAssetTag)
+    assert isinstance(error, LoanError)
+    assert (error.given, error.suggestion, error.tag) == ("lp-001", "LP-001", "lp-001")
+    assert str(error) == "Unknown asset tag: lp-001 (did you mean LP-001?)"
+
+
+def test_reservation_fields_message_family_and_allowed_member():
+    from pinjamlab.domain.loan_error import ReservationConflict
+
+    svc = seeded()
+    with pytest.raises(ReservationConflict) as exc:
+        svc.borrow("LP-004", "M-101", 7)
+    assert isinstance(exc.value, LoanError)
+    assert (exc.value.tag, exc.value.reserved_for) == ("LP-004", "M-103")
+    assert str(exc.value) == "Equipment reserved: LP-004 for M-103"
+    assert svc.find_equipment("LP-004").is_available()
+    assert svc.borrow("LP-004", "M-103", 7).member_id == "M-103"
+
+
+def test_duplicate_equipment_preserves_original():
+    from pinjamlab.domain.equipment import Equipment
+
+    svc = seeded()
+    original = svc.find_equipment("LP-001")
+    with pytest.raises(ValueError, match="Duplicate equipment: LP-001"):
+        svc.add_equipment(Equipment("LP-001", "replacement"))
+    assert svc.find_equipment("LP-001") is original
+
+
+@pytest.mark.parametrize("tag,member,error,message", [
+    ("LP-999", "M-101", UnknownAssetTag, "Unknown asset tag: LP-999"),
+    ("LP-002", "M-404", UnknownMember, "Unknown member: M-404"),
+    ("LP-001", "M-101", LoanError, "Equipment is not on loan: LP-001"),
+    ("LP-002", "M-101", LoanError, "Equipment not loaned to member: LP-002 for M-101"),
+])
+def test_invalid_returns_raise_without_mutation(tag, member, error, message):
+    svc = seeded()
+    committed = list(svc.ledger.committed)
+    with pytest.raises(error) as exc:
+        svc.return_item(tag, member)
+    assert str(exc.value) == message
+    assert not svc.find_equipment("LP-002").is_available()
+    assert svc.find_equipment("LP-001").is_available()
+    assert svc.find_member("M-103").active_loans == 1
+    assert svc.find_member("M-101").active_loans == 0
+    assert svc.ledger.committed == committed
+
+
+def test_return_updates_owner_once_and_allows_reborrow():
+    svc = seeded()
+    svc.return_item("LP-002", "M-103")
+    assert svc.find_equipment("LP-002").is_available()
+    assert svc.find_member("M-103").active_loans == 0
+    with pytest.raises(LoanError, match="not on loan"):
+        svc.return_item("LP-002", "M-103")
+    svc.borrow("LP-002", "M-101", 7)
+    with pytest.raises(LoanError, match="not loaned to member"):
+        svc.return_item("LP-002", "M-103")
+    svc.return_item("LP-002", "M-101")
+    assert svc.find_member("M-101").active_loans == 0

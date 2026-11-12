@@ -10,7 +10,7 @@ from pathlib import Path
 
 @dataclass(frozen=True, slots=True)
 class RawRow:
-    line_number: int  # 1-based, counting data rows only
+    line_number: int  # physical line, excluding the header's lines
     tag: str
     member_id: str
     days_raw: str
@@ -22,7 +22,12 @@ class CsvReader:
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.reader(fh)
             next(reader, None)  # header, discarded
-            for i, fields in enumerate(reader, start=1):
+            header_lines = reader.line_num
+            while True:
+                i = reader.line_num - header_lines + 1
+                fields = next(reader, None)
+                if fields is None:
+                    break
                 if not fields:
                     continue
                 tag = fields[0] if len(fields) > 0 else ""

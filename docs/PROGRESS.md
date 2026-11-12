@@ -1,6 +1,18 @@
 # Progres Modul 3
 
 Tanggal: 2026-11-12. Spesifikasi tunggal: prompt pengguna, bukan PDF/TXT.
+Pembaruan eksekusi: setup WSL cc85467. Python tetap 3.14.4.
+- [x] ASan native: docs/evidence/05_asan_instructor_errors.txt.
+- [x] Rekonstruksi: branch baseline/reconstructed, baseline 6ca6c7b.
+- [x] Defect A: test merah 0c004e1, hijau 0f0ccad; Defect B 67780d9.
+- [x] Bukti asli disimpan docs/evidence/reconstructed/ (bukan starter asli).
+- [x] Dua node, validator/paritas, return bersuara dan atomic writer diterapkan.
+- [x] Dependency gate negatif 12 arah dan graf nyata; gate/full test hijau.
+- [x] Hasil terakhir: 32 C++ dan 98 Python, docs/evidence/parity-review.log.
+- [ ] Refactor Result belum dimulai; PREDICTION harus commit terlebih dahulu.
+
+Checklist historis di bawah merekam keadaan awal, bukan status terbaru.
+
 
 ## D0
 - [x] Periksa status dan log; branch lab/modul3, tag m3-as-received = aa83fec.

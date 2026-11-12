@@ -1,0 +1,6 @@
+PASS main HEAD unchanged
+PASS main tracked worktree diff unchanged
+PASS main index diff unchanged
+lab/modul3
+/home/venerdi/loanbench                   cc85467 [lab/modul3]
+/home/venerdi/loanbench/bin/reconstructed 33c2ad5 [baseline/reconstructed]

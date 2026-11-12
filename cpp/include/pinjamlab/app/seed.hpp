@@ -25,6 +25,7 @@ inline void seedPinjamLab(LoanService& svc) {
     svc.addEquipment(Equipment("LP-001", "ThinkPad T14"));
     svc.addEquipment(Equipment("LP-002", "Latitude 5440"));
     svc.addEquipment(Equipment("LP-003", "ProBook 450"));
+    svc.addEquipment(Equipment("LP-004", "Reserved laptop", "M-103"));
     svc.addEquipment(Equipment("SEED-01", "Seed placeholder A"));
     svc.addEquipment(Equipment("SEED-02", "Seed placeholder B"));
 

@@ -1,0 +1,205 @@
+FFFFFFFF..FF                                                             [100%]
+=================================== FAILURES ===================================
+_ test_rejected_row_exact_message_and_nonzero[cpp-LP-999,M-101,7-Unknown asset tag: LP-999] _
+
+command = ['/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_cli']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag0')
+fields = 'LP-999,M-101,7', message = 'Unknown asset tag: LP-999'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: Unkn...999\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: Unknown asset tag: LP-999\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+_ test_rejected_row_exact_message_and_nonzero[cpp-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2] _
+
+command = ['/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_cli']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag1')
+fields = 'LP-003,M-102,7', message = 'Loan quota exceeded: 2 active, limit 2'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: Loan...t 2\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: Loan quota exceeded: 2 active, limit 2\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+_ test_rejected_row_exact_message_and_nonzero[cpp-LP-001,M-101,abc-days is not a number: abc] _
+
+command = ['/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_cli']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag2')
+fields = 'LP-001,M-101,abc', message = 'days is not a number: abc'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: days...abc\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: days is not a number: abc\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+_ test_rejected_row_exact_message_and_nonzero[python-LP-999,M-101,7-Unknown asset tag: LP-999] _
+
+command = ['/home/venerdi/loanbench/.venv/bin/python', '/home/venerdi/loanbench/bin/reconstructed/pinjamlab.py']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag3')
+fields = 'LP-999,M-101,7', message = 'Unknown asset tag: LP-999'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: Unkn...999\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: Unknown asset tag: LP-999\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+_ test_rejected_row_exact_message_and_nonzero[python-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2] _
+
+command = ['/home/venerdi/loanbench/.venv/bin/python', '/home/venerdi/loanbench/bin/reconstructed/pinjamlab.py']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag4')
+fields = 'LP-003,M-102,7', message = 'Loan quota exceeded: 2 active, limit 2'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: Loan...t 2\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: Loan quota exceeded: 2 active, limit 2\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+_ test_rejected_row_exact_message_and_nonzero[python-LP-001,M-101,abc-days is not a number: abc] _
+
+command = ['/home/venerdi/loanbench/.venv/bin/python', '/home/venerdi/loanbench/bin/reconstructed/pinjamlab.py']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_rejected_row_exact_messag5')
+fields = 'LP-001,M-101,abc', message = 'days is not a number: abc'
+
+    @pytest.mark.parametrize("fields,message", [
+        ("LP-999,M-101,7", "Unknown asset tag: LP-999"),
+        ("LP-003,M-102,7", "Loan quota exceeded: 2 active, limit 2"),
+        ("LP-001,M-101,abc", "days is not a number: abc"),
+    ])
+    def test_rejected_row_exact_message_and_nonzero(command, tmp_path, fields, message):
+        source = tmp_path / "request.csv"
+        source.write_text("tag,memberId,days\n" + fields + "\n")
+        result = subprocess.run(command + [str(source)], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"row 1: {message}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: days...abc\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: days is not a number: abc\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:28: AssertionError
+______________ test_missing_input_exact_message_and_nonzero[cpp] _______________
+
+command = ['/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_cli']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_missing_input_exact_messa0')
+
+    def test_missing_input_exact_message_and_nonzero(command, tmp_path):
+        path = str(tmp_path / "missing.csv")
+        result = subprocess.run(command + [path], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"cannot open input: {path}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('cannot open...csv\n', 1, '')
+E         
+E         At index 0 diff: '' != 'cannot open input: /tmp/pytest-of-venerdi/pytest-2/test_missing_input_exact_messa0/missing.csv\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:33: AssertionError
+_____________ test_missing_input_exact_message_and_nonzero[python] _____________
+
+command = ['/home/venerdi/loanbench/.venv/bin/python', '/home/venerdi/loanbench/bin/reconstructed/pinjamlab.py']
+tmp_path = PosixPath('/tmp/pytest-of-venerdi/pytest-2/test_missing_input_exact_messa1')
+
+    def test_missing_input_exact_message_and_nonzero(command, tmp_path):
+        path = str(tmp_path / "missing.csv")
+        result = subprocess.run(command + [path], capture_output=True, text=True)
+>       assert (result.stderr, result.returncode, result.stdout) == (f"cannot open input: {path}\n", 1, "")
+E       AssertionError: assert ('', 0, '') == ('cannot open...csv\n', 1, '')
+E         
+E         At index 0 diff: '' != 'cannot open input: /tmp/pytest-of-venerdi/pytest-2/test_missing_input_exact_messa1/missing.csv\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:33: AssertionError
+____________________ test_ten_errors_match_main_golden[cpp] ____________________
+
+command = ['/home/venerdi/loanbench/bin/reconstructed/bin/reconstructed_cli']
+
+    def test_ten_errors_match_main_golden(command):
+        result = subprocess.run(command + [str(ROOT / "sample-data/bad-requests.csv")], capture_output=True, text=True)
+        expected = Path("/home/venerdi/loanbench/sample-data/expected-output.txt").read_text()
+>       assert (result.stderr, result.returncode, result.stdout) == (expected, 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: tag ... 90\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: tag is empty\nrow 2: memberId is empty\nrow 3: days is not a number: abc\nrow 4: days must be positive, got -3\nrow 5: days must be positive, got 0\nrow 6: Unknown asset tag: LP-999\nrow 7: Unknown member: M-404\nrow 8: Equipment already on loan: LP-002\nrow 9: Loan quota exceeded: 2 active, limit 2\nrow 10: Loan duration exceeds maximum: 400 > 90\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:44: AssertionError
+__________________ test_ten_errors_match_main_golden[python] ___________________
+
+command = ['/home/venerdi/loanbench/.venv/bin/python', '/home/venerdi/loanbench/bin/reconstructed/pinjamlab.py']
+
+    def test_ten_errors_match_main_golden(command):
+        result = subprocess.run(command + [str(ROOT / "sample-data/bad-requests.csv")], capture_output=True, text=True)
+        expected = Path("/home/venerdi/loanbench/sample-data/expected-output.txt").read_text()
+>       assert (result.stderr, result.returncode, result.stdout) == (expected, 1, "")
+E       AssertionError: assert ('', 0, '') == ('row 1: tag ... 90\n', 1, '')
+E         
+E         At index 0 diff: '' != 'row 1: tag is empty\nrow 2: memberId is empty\nrow 3: days is not a number: abc\nrow 4: days must be positive, got -3\nrow 5: days must be positive, got 0\nrow 6: Unknown asset tag: LP-999\nrow 7: Unknown member: M-404\nrow 8: Equipment already on loan: LP-002\nrow 9: Loan quota exceeded: 2 active, limit 2\nrow 10: Loan duration exceeds maximum: 400 > 90\n'
+E         Use -v to get more diff
+
+test_reconstructed.py:44: AssertionError
+=========================== short test summary info ============================
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-999,M-101,7-Unknown asset tag: LP-999]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[cpp-LP-001,M-101,abc-days is not a number: abc]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-999,M-101,7-Unknown asset tag: LP-999]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-003,M-102,7-Loan quota exceeded: 2 active, limit 2]
+FAILED test_reconstructed.py::test_rejected_row_exact_message_and_nonzero[python-LP-001,M-101,abc-days is not a number: abc]
+FAILED test_reconstructed.py::test_missing_input_exact_message_and_nonzero[cpp]
+FAILED test_reconstructed.py::test_missing_input_exact_message_and_nonzero[python]
+FAILED test_reconstructed.py::test_ten_errors_match_main_golden[cpp] - Assert...
+FAILED test_reconstructed.py::test_ten_errors_match_main_golden[python] - Ass...
+10 failed, 2 passed in 4.55s
+exit=1

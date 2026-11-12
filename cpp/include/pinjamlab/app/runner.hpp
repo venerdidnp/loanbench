@@ -48,6 +48,11 @@ struct RunResult {
         try {
             (void)svc.borrow(req.tag, req.memberId, req.days);
             ++result.created;
+        } catch (const AssetTagCaseMismatch& e) {
+            ++result.rejected;
+            result.rejectedLines.push_back(ReportWriter::rejectedLine(
+                row.lineNumber, "Unknown asset tag: " + e.given() +
+                " (did you mean " + e.suggestion() + "?)"));
         } catch (const LoanError& e) {  // the family we understand
             ++result.rejected;
             result.rejectedLines.push_back(

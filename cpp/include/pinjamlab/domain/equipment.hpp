@@ -18,10 +18,13 @@ class Equipment {
     std::string tag_;
     std::string model_;
     EquipmentState state_ = EquipmentState::Available;
+    std::string reservedFor_;  // Empty means no reservation.
 
 public:
-    Equipment(std::string tag, std::string model)
-        : tag_(std::move(tag)), model_(std::move(model)) {}
+    Equipment(std::string tag, std::string model, std::string reservedFor = "")
+        : tag_(std::move(tag)), model_(std::move(model)),
+          reservedFor_(std::move(reservedFor)) {}
+    [[nodiscard]] const std::string& reservedFor() const noexcept { return reservedFor_; }
 
     [[nodiscard]] const std::string& tag() const noexcept { return tag_; }
     [[nodiscard]] const std::string& model() const noexcept { return model_; }

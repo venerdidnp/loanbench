@@ -1,0 +1,27 @@
+diff --git a/README.md b/README.md
+index 63625f0..de11605 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,9 @@
++# Reconstructed Baseline
++
++direkonstruksi oleh mahasiswa karena m3-start tidak diterima
++
++See RECONSTRUCTION.md for scope, intentional defects and harness exceptions.
++
+ # PinjamLab Module 3 — Error Handling & Modular Programming
+ 
+ Part of **Laboratorium Pemrograman II** (`25MP7716G014`), S1 Informatika,
+diff --git a/run_tests.sh b/run_tests.sh
+index 625fc34..727340d 100644
+--- a/run_tests.sh
++++ b/run_tests.sh
+@@ -80,7 +80,7 @@ done
+ echo ""
+ echo ">>> [4/5] Cross-language golden file: C++ CLI vs sample-data/expected-output.txt"
+ ./bin/pinjamlab_cli sample-data/bad-requests.csv 2>bin/cpp_stderr.txt 1>/dev/null || true
+-diff bin/cpp_stderr.txt sample-data/expected-output.txt
++diff bin/cpp_stderr.txt "${GOLDEN:-sample-data/expected-output.txt}"
+ echo "  match: C++ CLI output is byte-for-byte identical to expected-output.txt"
+ 
+ # ---- 5/5: run the Python suite, including the SAME golden-file check --------

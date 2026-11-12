@@ -1,0 +1,15 @@
+33c2ad53232eff8eb7006dca64e1e00d2e998fd0 docs: clarify observed fixture and Python path exceptions
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+67780d98515464f510ba10d04d40e48b7ef4be03 fix: own Loan with unique_ptr across quota exceptions
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+0f0ccadbaf32930cf46b531cd76715edd9b6751b fix: report application errors and return nonzero
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+0c004e1dbb9cc6f9e581d635e5fe91f1db343368 test: failing test exposes swallowed errors
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+
+6ca6c7b0fc01bf58087ec740859ed7d20f06d02e chore: reconstruct deliberately defective teaching baseline
+Co-authored-by: OpenAI ChatGPT <noreply@openai.com>
+

@@ -12,9 +12,10 @@ class EquipmentState(Enum):
 
 
 class Equipment:
-    def __init__(self, tag: str, model: str) -> None:
+    def __init__(self, tag: str, model: str, reserved_for: str = "") -> None:
         self.tag = tag
         self.model = model
+        self.reserved_for = reserved_for
         self._state = EquipmentState.AVAILABLE
 
     @property

@@ -1,0 +1,7 @@
+/home/venerdi/loanbench/docs/graphs/before-cpp.mmd: 10 nodes, 9 edges
+/home/venerdi/loanbench/docs/graphs/after-cpp.mmd: 14 nodes, 21 edges
+/home/venerdi/loanbench/docs/graphs/after-cpp-layers.mmd: 4 nodes, 5 edges
+/home/venerdi/loanbench/docs/graphs/before-py.mmd: 5 nodes, 4 edges
+/home/venerdi/loanbench/docs/graphs/after-py.mmd: 14 nodes, 23 edges
+/home/venerdi/loanbench/docs/graphs/after-py-layers.mmd: 4 nodes, 5 edges
+Dependency gate findings during generation: 0
