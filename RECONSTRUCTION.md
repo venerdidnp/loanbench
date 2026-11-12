@@ -8,6 +8,14 @@ Baseline A deliberately swallows errors and exits zero. Baseline B allocates a
 raw Loan before recordLoan throws quota, leaking on that error path.
 Only defects A/B are addressed later; no production cpp/ or py/ files change.
 
+Verification note: the original golden comparison actually passed in this WSL
+checkout; the anticipated CRLF mismatch did not reproduce. GOLDEN is still set
+explicitly to the main normalized fixture for every non-red pre-commit run.
+Also set PYTHONSAFEPATH=1: the root monolith otherwise shadows the inherited
+pinjamlab package during python -m pytest. No inherited Python source is changed.
+The baseline commit preserves the two intentional defects; subsequent commits
+contain red tests, the diagnostic fix, then the scoped-ownership fix.
+
 Harness exception: the inherited runner accepts a GOLDEN environment override.
 The received CRLF fixture fails the Linux byte comparison. Before every non-red
 commit run the inherited suite using the main normalized fixture, without

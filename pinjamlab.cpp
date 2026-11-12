@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
@@ -49,11 +50,10 @@ void rules(const Request& r, std::map<std::string, bool>& equipment, std::map<st
     if (!members.count(r.member)) throw std::runtime_error("Unknown member: " + r.member);
     if (days > 90) throw std::runtime_error("Loan duration exceeds maximum: " + std::to_string(days) + " > 90");
     if (!equipment.at(r.tag)) throw std::runtime_error("Equipment already on loan: " + r.tag);
-    // Deliberately defective teaching baseline B: quota throws before delete.
-    Loan* loan = new Loan{r.tag, r.member, days};
+    // Scoped ownership releases the Loan when recordLoan throws quota.
+    auto loan = std::make_unique<Loan>(Loan{r.tag, r.member, days});
     members.at(r.member).recordLoan();
     equipment.at(r.tag) = false;
-    delete loan;
 }
 void print(const Request& r) { std::cout << "row " << r.row << ": loan created: " << r.tag << '\n'; }
 int main(int argc, char** argv) {
