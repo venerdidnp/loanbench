@@ -1,6 +1,8 @@
 # Progres Modul 3
 
 Tanggal: 2026-11-12. Spesifikasi tunggal: prompt pengguna, bukan PDF/TXT.
+Commit fitur sebelum Result: 5f8fc29. PREDICTION ditulis sekarang sebelum implementasi.
+
 Pembaruan eksekusi: setup WSL cc85467. Python tetap 3.14.4.
 - [x] ASan native: docs/evidence/05_asan_instructor_errors.txt.
 - [x] Rekonstruksi: branch baseline/reconstructed, baseline 6ca6c7b.
