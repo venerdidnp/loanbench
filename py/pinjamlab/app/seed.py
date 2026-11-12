@@ -21,6 +21,9 @@ def seed_pinjamlab(svc: LoanService) -> None:
     svc.add_member(Member("M-102", "Budi Santoso", Role.STUDENT))
     svc.add_member(Member("M-103", "Citra Dewi", Role.STUDENT))
 
-    svc.borrow("LP-002", "M-103", 5)   # LP-002 -> Loaned; M-103 -> 1 active
-    svc.borrow("SEED-01", "M-102", 5)  # M-102 -> 1 active
-    svc.borrow("SEED-02", "M-102", 5)  # M-102 -> 2 active == limit
+    if not (result := svc.borrow("LP-002", "M-103", 5)).ok:
+        raise RuntimeError(result.error)
+    if not (result := svc.borrow("SEED-01", "M-102", 5)).ok:
+        raise RuntimeError(result.error)
+    if not (result := svc.borrow("SEED-02", "M-102", 5)).ok:
+        raise RuntimeError(result.error)

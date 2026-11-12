@@ -27,7 +27,9 @@ def test_reservation_lives_on_equipment_and_reserve_updates_it():
         svc.reserve("LP-001", "M-404")
     assert equipment.reserved_for == "M-103"
     equipment.reserved_for = ""
-    assert svc.borrow("LP-001", "M-101", 7).member_id == "M-101"
+    result = svc.borrow("LP-001", "M-101", 7)
+    assert result.ok
+    assert result.value.member_id == "M-101"
 
 
 @pytest.mark.parametrize("days", [0, -1, -2147483648, 91])
@@ -42,9 +44,13 @@ def test_direct_service_duration_bounds_preserve_error_and_state(days):
     assert svc.find_equipment("LP-001").is_available()
     assert svc.find_member("M-101").active_loans == 0
     assert svc.ledger.committed == committed
-    assert svc.borrow("LP-001", "M-101", 1).days == 1
+    shortest = svc.borrow("LP-001", "M-101", 1)
+    assert shortest.ok
+    assert shortest.value.days == 1
     svc.return_item("LP-001", "M-101")
-    assert svc.borrow("LP-001", "M-101", 90).days == 90
+    longest = svc.borrow("LP-001", "M-101", 90)
+    assert longest.ok
+    assert longest.value.days == 90
 
 
 def test_case_suggestions_fold_ascii_only():

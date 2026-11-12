@@ -1,0 +1,217 @@
+================================================================================
+ [PinjamLab M3] g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+ [PinjamLab M3] Python 3.14.4
+================================================================================
+
+>>> [1/5] Dependency gate (C++ includes and Python AST)
+PASS: dependency directions and domain I/O purity (56 local dependencies)
+
+>>> [2/5] Building C++20 tests (-Wall -Wextra -Werror)
+
+>>> [3/5] Running C++20 test suites
+===============================================================================
+Running test suite (8 test cases)...
+===============================================================================
+PASSED: UnknownAssetTag: unknown tag, carries the tag
+PASSED: UnknownMember: unknown member, carries the id
+PASSED: InvalidLoanDuration: business-rule maximum, not the format check
+PASSED: EquipmentUnavailable: already on loan returns the same message
+PASSED: QuotaExceeded: over quota, carries active and limit
+PASSED: Remaining thrown service errors are catchable as LoanError
+PASSED: Catch order: most-specific handler runs when listed first
+PASSED: A successful borrow raises nothing and updates both entities
+===============================================================================
+All tests finished: 8 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (4 test cases)...
+===============================================================================
+PASSED: TxnGuard commits: staged records become committed
+PASSED: TxnGuard rolls back on normal scope exit without commit()
+PASSED: TxnGuard rolls back when an exception unwinds through it
+PASSED: LoanService.borrow() commits the ledger on success
+===============================================================================
+All tests finished: 4 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (7 test cases)...
+===============================================================================
+PASSED: Result::success carries a value and ok() is true
+PASSED: Result::failure carries a message and ok() is false
+PASSED: value() on a failed Result throws, rather than returning garbage
+PASSED: From-scratch match: Result and throwing agree on well-formed input
+PASSED: From-scratch match: Result and throwing agree on every malformed input
+PASSED: Borrow Result and throwing twin: identical inputs, messages, types and state
+PASSED: Manual union owns nondefault payload across copies, moves and throwing assignments
+===============================================================================
+All tests finished: 7 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (2 test cases)...
+===============================================================================
+PASSED: bad-requests.csv reproduces expected-output.txt byte for byte
+PASSED: my-bad-requests.csv reproduces C++ generated golden, five rejections
+===============================================================================
+All tests finished: 2 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (14 test cases)...
+===============================================================================
+PASSED: Case mismatch fields, exact message, and both catch families
+PASSED: Reservation fields, family, allowed holder, and empty sentinel
+PASSED: Validator distinguishes blank fields while preserving empty errors
+PASSED: Days accepts only signed ASCII digits and checks int32 bounds
+PASSED: CRLF reader counts blank physical data lines and app dispatches handlers
+PASSED: Duplicate equipment throws logic_error and preserves original
+PASSED: Returns reject invalid requests before mutation and succeed once
+PASSED: Report commit atomically replaces destination and removes unique same-dir temporary
+PASSED: Report normal and throwing exits remove temporary and preserve destination
+PASSED: Report failed rename cleans up, and invalid parent fails construction
+PASSED: Report write failure unwinds without publishing partial output
+PASSED: Case suggestions fold ASCII only
+PASSED: Parity wrong-owner return preserves state
+PASSED: Direct service rejects nonpositive durations
+===============================================================================
+All tests finished: 14 passed, 0 failed.
+===============================================================================
+===============================================================================
+Running test suite (2 test cases)...
+===============================================================================
+PASSED: Limits demo: deep chain explicitly propagates failure through every frame
+PASSED: Limits demo: fixed void callback cannot return Result and needs an adapter
+===============================================================================
+All tests finished: 2 passed, 0 failed.
+===============================================================================
+PASSED: limits_demo deep chain explicit propagation
+PASSED: limits_demo Python can silently ignore a failed Result
+
+>>> [4/5] Cross-language golden files and exact CLI exit codes
+  match: bin/cpp_stderr.txt matches golden file(s), CLI exit 1
+  match: bin/py_stderr.txt matches golden file(s), CLI exit 1
+  match: bin/my_cpp_stderr.txt matches C++ generated five-row golden, CLI exit 1
+  match: bin/my_py_stderr.txt matches C++ generated five-row golden, CLI exit 1
+
+>>> [5/5] Running Python test suite (version reported above)
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- /home/venerdi/loanbench/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/venerdi/loanbench
+collecting ... collected 111 items
+
+py/tests/test_app.py::test_bad_requests_csv_reproduces_expected_output_byte_for_byte PASSED [  0%]
+py/tests/test_app.py::test_my_bad_requests_matches_cpp_generated_golden PASSED [  1%]
+py/tests/test_app.py::test_runner_specific_catches_use_fields_before_family PASSED [  2%]
+py/tests/test_app.py::test_csv_counts_physical_lines_including_multiline_fields PASSED [  3%]
+py/tests/test_cleanup.py::test_txn_guard_commits_staged_records_become_committed PASSED [  4%]
+py/tests/test_cleanup.py::test_txn_guard_rolls_back_when_an_exception_propagates_through_it PASSED [  5%]
+py/tests/test_cleanup.py::test_forgetting_with_retains_an_open_handle_until_manually_closed PASSED [  6%]
+py/tests/test_cleanup.py::test_contextmanager_generator_is_lazy PASSED   [  7%]
+py/tests/test_cleanup.py::test_loan_service_borrow_commits_the_ledger_on_success PASSED [  8%]
+py/tests/test_cleanup.py::test_atomic_writer_replaces_only_on_success PASSED [  9%]
+py/tests/test_cleanup.py::test_atomic_writer_cleans_up_on_body_failure[False] PASSED [  9%]
+py/tests/test_cleanup.py::test_atomic_writer_cleans_up_on_body_failure[True] PASSED [ 10%]
+py/tests/test_cleanup.py::test_atomic_writer_cleans_up_on_replace_failure PASSED [ 11%]
+py/tests/test_cleanup.py::test_atomic_writer_uses_unique_temporary_files PASSED [ 12%]
+py/tests/test_cleanup.py::test_atomic_writer_cleans_up_on_write_failure PASSED [ 13%]
+py/tests/test_cleanup.py::test_atomic_writer_cleans_up_on_base_exception PASSED [ 14%]
+py/tests/test_dependency_gate.py::test_real_sources_pass PASSED          [ 15%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-io] PASSED [ 16%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-service] PASSED [ 17%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-domain-app] PASSED [ 18%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-io-service] PASSED [ 18%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-io-app] PASSED [ 19%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[cpp-service-app] PASSED [ 20%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-io] PASSED [ 21%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-service] PASSED [ 22%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-domain-app] PASSED [ 23%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-io-service] PASSED [ 24%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-io-app] PASSED [ 25%]
+py/tests/test_dependency_gate.py::test_each_forbidden_direction[py-service-app] PASSED [ 26%]
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-def hidden():\n    import csv as c\n] PASSED [ 27%]
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-from builtins import open as op\nop('file')\n] PASSED [ 27%]
+py/tests/test_dependency_gate.py::test_domain_io_rejected[py-print('forbidden')\n] PASSED [ 28%]
+py/tests/test_dependency_gate.py::test_domain_io_rejected[cpp-#include <fstream>\n] PASSED [ 29%]
+py/tests/test_dependency_gate.py::test_domain_io_rejected[cpp-void probe() { std::cout << 1; }\n] PASSED [ 30%]
+py/tests/test_dependency_gate.py::test_comments_and_strings_are_not_dependencies PASSED [ 31%]
+py/tests/test_errors.py::test_unknown_asset_tag_carries_the_tag PASSED   [ 32%]
+py/tests/test_errors.py::test_unknown_member_carries_the_id PASSED       [ 33%]
+py/tests/test_errors.py::test_invalid_loan_duration_is_the_business_rule_maximum PASSED [ 34%]
+py/tests/test_errors.py::test_equipment_unavailable_returns_same_message PASSED [ 35%]
+py/tests/test_errors.py::test_quota_exceeded_carries_active_and_limit PASSED [ 36%]
+py/tests/test_errors.py::test_remaining_thrown_service_errors_are_catchable_as_loan_error PASSED [ 36%]
+py/tests/test_errors.py::test_a_bare_except_would_also_catch_keyboard_interrupt_dont_write_one PASSED [ 37%]
+py/tests/test_errors.py::test_a_successful_borrow_raises_nothing_and_updates_both_entities PASSED [ 38%]
+py/tests/test_errors.py::test_case_mismatch_fields_message_and_family PASSED [ 39%]
+py/tests/test_errors.py::test_reservation_fields_message_family_and_allowed_member PASSED [ 40%]
+py/tests/test_errors.py::test_duplicate_equipment_preserves_original PASSED [ 41%]
+py/tests/test_errors.py::test_invalid_returns_raise_without_mutation[LP-999-M-101-UnknownAssetTag-Unknown asset tag: LP-999] PASSED [ 42%]
+py/tests/test_errors.py::test_invalid_returns_raise_without_mutation[LP-002-M-404-UnknownMember-Unknown member: M-404] PASSED [ 43%]
+py/tests/test_errors.py::test_invalid_returns_raise_without_mutation[LP-001-M-101-LoanError-Equipment is not on loan: LP-001] PASSED [ 44%]
+py/tests/test_errors.py::test_invalid_returns_raise_without_mutation[LP-002-M-101-LoanError-Equipment not loaned to member: LP-002 for M-101] PASSED [ 45%]
+py/tests/test_errors.py::test_return_updates_owner_once_and_allows_reborrow PASSED [ 45%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-001-M-101-7] PASSED [ 46%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-002-M-101-7] PASSED [ 47%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-999-M-101-7] PASSED [ 48%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[lp-001-M-101-7] PASSED [ 49%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-001-M-404-7] PASSED [ 50%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-001-M-101-0] PASSED [ 51%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-001-M-101-91] PASSED [ 52%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-004-M-101-7] PASSED [ 53%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-003-M-102-7] PASSED [ 54%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-002-M-404-7] PASSED [ 54%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-002-M-101-0] PASSED [ 55%]
+py/tests/test_result.py::test_borrow_result_throwing_twin_same_inputs_outcome_and_state[LP-002-M-102-7] PASSED [ 56%]
+py/tests/test_result.py::test_success_carries_a_value_and_ok_is_true PASSED [ 57%]
+py/tests/test_result.py::test_failure_carries_a_message_and_ok_is_false PASSED [ 58%]
+py/tests/test_result.py::test_value_on_a_failed_result_raises_rather_than_returning_garbage PASSED [ 59%]
+py/tests/test_result.py::test_from_scratch_match_agree_on_well_formed_input PASSED [ 60%]
+py/tests/test_result.py::test_from_scratch_match_agree_on_every_malformed_input[abc] PASSED [ 61%]
+py/tests/test_result.py::test_from_scratch_match_agree_on_every_malformed_input[-3] PASSED [ 62%]
+py/tests/test_result.py::test_from_scratch_match_agree_on_every_malformed_input[0] PASSED [ 63%]
+py/tests/test_result.py::test_strict_days_parsing_parity[7] PASSED       [ 63%]
+py/tests/test_result.py::test_strict_days_parsing_parity[+7] PASSED      [ 64%]
+py/tests/test_result.py::test_strict_days_parsing_parity[0007] PASSED    [ 65%]
+py/tests/test_result.py::test_strict_days_parsing_parity[+0007] PASSED   [ 66%]
+py/tests/test_result.py::test_strict_days_parsing_parity[2147483647] PASSED [ 67%]
+py/tests/test_result.py::test_strict_days_parsing_parity[-2147483648] PASSED [ 68%]
+py/tests/test_result.py::test_strict_days_parsing_parity[2147483648] PASSED [ 69%]
+py/tests/test_result.py::test_strict_days_parsing_parity[-2147483649] PASSED [ 70%]
+py/tests/test_result.py::test_strict_days_parsing_parity[+2147483648] PASSED [ 71%]
+py/tests/test_result.py::test_strict_days_parsing_parity[0] PASSED       [ 72%]
+py/tests/test_result.py::test_strict_days_parsing_parity[-0] PASSED      [ 72%]
+py/tests/test_result.py::test_strict_days_parsing_parity[-3] PASSED      [ 73%]
+py/tests/test_result.py::test_strict_days_parsing_parity[] PASSED        [ 74%]
+py/tests/test_result.py::test_strict_days_parsing_parity[+] PASSED       [ 75%]
+py/tests/test_result.py::test_strict_days_parsing_parity[-] PASSED       [ 76%]
+py/tests/test_result.py::test_strict_days_parsing_parity[ 7] PASSED      [ 77%]
+py/tests/test_result.py::test_strict_days_parsing_parity[7 ] PASSED      [ 78%]
+py/tests/test_result.py::test_strict_days_parsing_parity[7\n] PASSED     [ 79%]
+py/tests/test_result.py::test_strict_days_parsing_parity[1_0] PASSED     [ 80%]
+py/tests/test_result.py::test_strict_days_parsing_parity[1.0] PASSED     [ 81%]
+py/tests/test_result.py::test_strict_days_parsing_parity[++7] PASSED     [ 81%]
+py/tests/test_result.py::test_strict_days_parsing_parity[+-7] PASSED     [ 82%]
+py/tests/test_result.py::test_strict_days_parsing_parity[\u0667] PASSED  [ 83%]
+py/tests/test_result.py::test_strict_days_parsing_parity[\uff17] PASSED  [ 84%]
+py/tests/test_result.py::test_strict_days_parsing_parity[\u22127] PASSED [ 85%]
+py/tests/test_result.py::test_strict_days_parsing_parity[raw25] PASSED   [ 86%]
+py/tests/test_result.py::test_strict_days_parsing_parity[raw26] PASSED   [ 87%]
+py/tests/test_result.py::test_empty_and_blank_fields_are_validator_results[-M-101-tag is empty] PASSED [ 88%]
+py/tests/test_result.py::test_empty_and_blank_fields_are_validator_results[ \t-M-101-tag is blank] PASSED [ 89%]
+py/tests/test_result.py::test_empty_and_blank_fields_are_validator_results[LP-001--memberId is empty] PASSED [ 90%]
+py/tests/test_result.py::test_empty_and_blank_fields_are_validator_results[LP-001- \t-memberId is blank] PASSED [ 90%]
+py/tests/test_result.py::test_out_of_range_message_preserves_raw_days[2147483648] PASSED [ 91%]
+py/tests/test_result.py::test_out_of_range_message_preserves_raw_days[-2147483649] PASSED [ 92%]
+py/tests/test_result.py::test_out_of_range_message_preserves_raw_days[+9999999999] PASSED [ 93%]
+py/tests/test_robustness.py::test_reservation_lives_on_equipment_and_reserve_updates_it PASSED [ 94%]
+py/tests/test_robustness.py::test_direct_service_duration_bounds_preserve_error_and_state[0] PASSED [ 95%]
+py/tests/test_robustness.py::test_direct_service_duration_bounds_preserve_error_and_state[-1] PASSED [ 96%]
+py/tests/test_robustness.py::test_direct_service_duration_bounds_preserve_error_and_state[-2147483648] PASSED [ 97%]
+py/tests/test_robustness.py::test_direct_service_duration_bounds_preserve_error_and_state[91] PASSED [ 98%]
+py/tests/test_robustness.py::test_case_suggestions_fold_ascii_only PASSED [ 99%]
+py/tests/test_robustness.py::test_wrong_owner_return_preserves_state_and_correct_owner_can_return PASSED [100%]
+
+============================= 111 passed in 2.46s ==============================
+
+================================================================================
+ [SUCCESS] Purity check, C++ suites, golden file, and Python suite all passed.
+================================================================================

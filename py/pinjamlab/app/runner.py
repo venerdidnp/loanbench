@@ -44,7 +44,12 @@ def run_catalogue(svc: LoanService, csv_path: str) -> RunResult:
             continue
         req = validated.value
         try:
-            svc.borrow(req.tag, req.member_id, req.days)
+            borrowed = svc.borrow(req.tag, req.member_id, req.days)
+            if not borrowed.ok:
+                result.rejected += 1
+                result.rejected_lines.append(
+                    ReportWriter.rejected_line(row.line_number, borrowed.error))
+                continue
             result.created += 1
         except AssetTagCaseMismatch as e:
             result.rejected += 1

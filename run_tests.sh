@@ -40,6 +40,7 @@ for t in test_errors test_raii test_result test_app test_robustness; do
            -Icpp/include -Icpp/tests "cpp/tests/$t.cpp" -o "bin/$t"
 done
 "$CXX" -std=c++20 -Wall -Wextra -Werror -Icpp/include cpp/app/main.cpp -o bin/pinjamlab_cli
+"$CXX" -std=c++20 -Wall -Wextra -Werror -Icpp/include -Icpp/tests tests/limits_demo.cpp -o bin/limits_demo
 
 # ---- 3/5: run the C++ suites --------------------------------------------------
 echo ""
@@ -49,6 +50,8 @@ for t in test_errors test_raii test_result test_app test_robustness; do
 done
 
 # ---- 4/5: the cross-language golden-file check -------------------------------
+./bin/limits_demo
+PYTHONPATH=py "$PY" tests/limits_demo.py
 echo ""
 echo ">>> [4/5] Cross-language golden files and exact CLI exit codes"
 expect_rejected() {
@@ -74,10 +77,17 @@ for output in bin/cpp_stderr.txt bin/py_stderr.txt; do
     echo "  match: $output matches golden file(s), CLI exit 1"
 done
 
+expect_rejected ./bin/pinjamlab_cli sample-data/my-bad-requests.csv 2>bin/my_cpp_stderr.txt >/dev/null
+expect_rejected env PYTHONPATH=py "$PY" -m pinjamlab.app.main sample-data/my-bad-requests.csv 2>bin/my_py_stderr.txt >/dev/null
+for output in bin/my_cpp_stderr.txt bin/my_py_stderr.txt; do
+    diff <(tr -d '\r' < "$output") <(tr -d '\r' < sample-data/my-expected-output.txt)
+    echo "  match: $output matches C++ generated five-row golden, CLI exit 1"
+done
+
 # ---- 5/5: run the Python suite, including gate mutation tests ------------------
 echo ""
 echo ">>> [5/5] Running Python test suite (version reported above)"
-PYTHONPATH=py "$PY" -m pytest py/tests -q
+PYTHONPATH=py "$PY" -m pytest py/tests -v
 
 echo ""
 echo "================================================================================"

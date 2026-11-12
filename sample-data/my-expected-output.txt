@@ -1,0 +1,5 @@
+row 1: tag is blank
+row 2: memberId is blank
+row 3: days is out of range: 2147483648
+row 4: Unknown asset tag: lp-001 (did you mean LP-001?)
+row 5: Equipment reserved: LP-004 for M-103

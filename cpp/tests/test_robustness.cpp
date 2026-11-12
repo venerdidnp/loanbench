@@ -58,7 +58,9 @@ TEST_CASE("Reservation fields, family, allowed holder, and empty sentinel") {
     }
     REQUIRE_THROWS_AS((void)svc.borrow("LP-004", "M-101", 7), LoanError);
     REQUIRE(svc.findMember("M-101")->activeLoans() == 0);
-    REQUIRE(svc.borrow("LP-004", "M-103", 7).memberId() == "M-103");
+    const auto result = svc.borrow("LP-004", "M-103", 7);
+    REQUIRE(result.ok());
+    REQUIRE(result.value().memberId() == "M-103");
 }
 
 TEST_CASE("Validator distinguishes blank fields while preserving empty errors") {
@@ -240,7 +242,7 @@ TEST_CASE("Parity wrong-owner return preserves state") {
     } catch (const LoanError& e) {
         REQUIRE(std::string(e.what()) == "Equipment is not on loan: LP-002");
     }
-    (void)svc.borrow("LP-002", "M-101", 7);
+    REQUIRE(svc.borrow("LP-002", "M-101", 7).ok());
     REQUIRE_THROWS_AS(svc.returnItem("LP-002", "M-103"), LoanError);
     svc.returnItem("LP-002", "M-101");
     REQUIRE(svc.findMember("M-101")->activeLoans() == 0);
@@ -262,7 +264,11 @@ TEST_CASE("Direct service rejects nonpositive durations") {
         REQUIRE(svc.findMember("M-101")->activeLoans() == 0);
         REQUIRE(svc.ledger().committed() == committed);
     }
-    REQUIRE(svc.borrow("LP-001", "M-101", 1).days() == 1);
+    const auto shortest = svc.borrow("LP-001", "M-101", 1);
+    REQUIRE(shortest.ok());
+    REQUIRE(shortest.value().days() == 1);
     svc.returnItem("LP-001", "M-101");
-    REQUIRE(svc.borrow("LP-001", "M-101", 90).days() == 90);
+    const auto longest = svc.borrow("LP-001", "M-101", 90);
+    REQUIRE(longest.ok());
+    REQUIRE(longest.value().days() == 90);
 }

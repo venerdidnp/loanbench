@@ -16,6 +16,7 @@ from ..domain.loan_error import (
     UnknownMember,
 )
 from ..domain.member import Member
+from ..domain.result import Result
 from .database import Database
 from .txn_guard import txn_guard
 
@@ -57,7 +58,8 @@ class LoanService:
     def ledger(self) -> Database:
         return self._db
 
-    def borrow(self, tag: str, member_id: str, days: int) -> Loan:
+    def borrow(self, tag: str, member_id: str, days: int) -> Result[Loan]:
+        # Only unavailability returns failure; other guards still raise.
         equipment = self._catalog.get(tag)
         if equipment is None:
             for known_tag in self._catalog:
@@ -75,7 +77,7 @@ class LoanService:
         # Checked before any mutation, same order as the C++ side:
         # availability, reservation, then quota.
         if not equipment.is_available():
-            raise EquipmentUnavailable(tag)
+            return Result.failure(str(EquipmentUnavailable(tag)))
         reserved_for = equipment.reserved_for
         if reserved_for and reserved_for != member_id:
             raise ReservationConflict(tag, reserved_for)
@@ -93,7 +95,7 @@ class LoanService:
             db.stage(f"equipment:{tag}:loaned")
 
         self._owners[tag] = member_id
-        return Loan(f"L-{tag}-{member_id}", tag, member_id, days)
+        return Result.success(Loan(f"L-{tag}-{member_id}", tag, member_id, days))
 
     def return_item(self, tag: str, member_id: str) -> None:
         equipment = self._catalog.get(tag)

@@ -9,6 +9,7 @@
 #include "pinjamlab/domain/loan.hpp"
 #include "pinjamlab/domain/loan_error.hpp"
 #include "pinjamlab/domain/member.hpp"
+#include "pinjamlab/domain/result.hpp"
 #include "pinjamlab/service/database.hpp"
 #include "pinjamlab/service/txn_guard.hpp"
 
@@ -44,7 +45,8 @@ public:
     // -- the TxnGuard exists for the mutation step itself, to keep the
     // pattern honest for the day a guard is added AFTER a mutation begins
     // (Module 5's database transactions are exactly that day).
-    [[nodiscard]] Loan borrow(const std::string& tag, const std::string& memberId, int days) {
+    // Only unavailability returns failure; all other guards still throw.
+    [[nodiscard]] Result<Loan> borrow(const std::string& tag, const std::string& memberId, int days) {
         auto eqIt = catalog_.find(tag);
         if (eqIt == catalog_.end()) {
             for (const auto& [known, equipment] : catalog_) {
@@ -68,7 +70,7 @@ public:
         Equipment& eq = eqIt->second;
         Member& mem = memIt->second;
 
-        if (!eq.isAvailable()) throw EquipmentUnavailable(tag);
+        if (!eq.isAvailable()) return Result<Loan>::failure(EquipmentUnavailable(tag).what());
         if (!eq.reservedFor().empty() && eq.reservedFor() != memberId)
             throw ReservationConflict(tag, eq.reservedFor());
         if (!mem.canBorrow()) throw QuotaExceeded(mem.activeLoans(), mem.maxLoans());
@@ -86,7 +88,7 @@ public:
         txn.commit();
 
         owners_[tag] = memberId;
-        return Loan("L-" + tag + "-" + memberId, tag, memberId, days);
+        return Result<Loan>::success(Loan("L-" + tag + "-" + memberId, tag, memberId, days));
     }
 
     void returnItem(const std::string& loanTag, const std::string& memberId) {

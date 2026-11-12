@@ -27,6 +27,16 @@ def test_bad_requests_csv_reproduces_expected_output_byte_for_byte():
     assert result.exit_code == 1
 
 
+def test_my_bad_requests_matches_cpp_generated_golden():
+    svc = LoanService()
+    seed_pinjamlab(svc)
+    result = run_catalogue(svc, str(ROOT / "sample-data/my-bad-requests.csv"))
+    expected = (ROOT / "sample-data/my-expected-output.txt").read_text().splitlines()
+    assert len(expected) == 5
+    assert result.rejected_lines == expected
+    assert (result.total, result.created, result.rejected, result.exit_code) == (5, 0, 5, 1)
+
+
 def test_runner_specific_catches_use_fields_before_family(tmp_path):
     from pinjamlab.domain.loan_error import AssetTagCaseMismatch, ReservationConflict
 

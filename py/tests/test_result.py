@@ -5,8 +5,70 @@ based rule and a throwing equivalent agree on every input -- the
 import pytest
 
 from pinjamlab.domain.result import Result
+from pinjamlab.app.seed import seed_pinjamlab
+from pinjamlab.domain.loan_error import EquipmentUnavailable, LoanError
+from pinjamlab.service.loan_service import LoanService
 from pinjamlab.io.csv_reader import RawRow
 from pinjamlab.io.validator import Validator
+
+
+def borrow_or_raise(svc, tag, member, days):
+    """Test-only adapter, deliberately not a production throwing twin."""
+    result = svc.borrow(tag, member, days)
+    if not result.ok:
+        raise EquipmentUnavailable(tag)
+    return result.value
+
+
+@pytest.mark.parametrize("tag,member,days", [
+    ("LP-001", "M-101", 7), ("LP-002", "M-101", 7),
+    ("LP-999", "M-101", 7), ("lp-001", "M-101", 7),
+    ("LP-001", "M-404", 7), ("LP-001", "M-101", 0),
+    ("LP-001", "M-101", 91), ("LP-004", "M-101", 7),
+    ("LP-003", "M-102", 7), ("LP-002", "M-404", 7),
+    ("LP-002", "M-101", 0), ("LP-002", "M-102", 7),
+])
+def test_borrow_result_throwing_twin_same_inputs_outcome_and_state(tag, member, days):
+    actual, twin = LoanService(), LoanService()
+    seed_pinjamlab(actual)
+    seed_pinjamlab(twin)
+    before = list(actual.ledger.committed)
+    success = False
+    try:
+        result = actual.borrow(tag, member, days)
+        success = result.ok
+        if result.ok:
+            loan = result.value
+            outcome = (None, loan.loan_id, loan.tag, loan.member_id, loan.days)
+        else:
+            outcome = (EquipmentUnavailable, result.error)
+            with pytest.raises(RuntimeError):
+                _ = result.value
+    except LoanError as error:
+        outcome = (type(error), str(error))
+    try:
+        loan = borrow_or_raise(twin, tag, member, days)
+        twin_outcome = (None, loan.loan_id, loan.tag, loan.member_id, loan.days)
+    except LoanError as error:
+        twin_outcome = (type(error), str(error))
+    assert outcome == twin_outcome
+    for item in ("LP-001", "LP-002", "LP-003", "LP-004", "SEED-01", "SEED-02"):
+        a, b = actual.find_equipment(item), twin.find_equipment(item)
+        assert (a.is_available(), a.reserved_for) == (b.is_available(), b.reserved_for)
+    for person in ("M-101", "M-102", "M-103"):
+        assert actual.find_member(person).active_loans == twin.find_member(person).active_loans
+    assert actual.ledger.committed == twin.ledger.committed
+    assert len(actual.ledger.committed) == (8 if success else 6)
+    assert actual.ledger.pending_count == twin.ledger.pending_count == 0
+    if not success:
+        assert actual.ledger.committed == before
+        assert [actual.find_member(m).active_loans for m in ("M-101", "M-102", "M-103")] == [0, 2, 1]
+        assert [actual.find_equipment(t).is_available() for t in ("LP-001", "LP-002", "LP-003", "LP-004")] == [True, False, True, True]
+    item, owner = (tag, member) if success else ("LP-002", "M-103")
+    actual.return_item(item, owner)
+    twin.return_item(item, owner)
+    assert actual.find_equipment(item).is_available()
+    assert twin.find_equipment(item).is_available()
 
 
 def test_success_carries_a_value_and_ok_is_true():

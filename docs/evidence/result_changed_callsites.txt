@@ -1,0 +1,51 @@
+CHANGED cpp/include/pinjamlab/app/runner.hpp:49: (void)svc.borrow(req.tag, req.memberId, req.days);
+CHANGED cpp/include/pinjamlab/app/seed.hpp:38: (void)svc.borrow("LP-002", "M-103", 5);   // LP-002 -> Loaned; M-103 -> 1 active
+CHANGED cpp/include/pinjamlab/app/seed.hpp:39: (void)svc.borrow("SEED-01", "M-102", 5);  // M-102 -> 1 active
+CHANGED cpp/include/pinjamlab/app/seed.hpp:40: (void)svc.borrow("SEED-02", "M-102", 5);  // M-102 -> 2 active == limit
+same    cpp/tests/test_errors.cpp:19: (void)svc.borrow("LP-999", "M-101", 7);
+same    cpp/tests/test_errors.cpp:30: (void)svc.borrow("LP-001", "M-404", 7);
+same    cpp/tests/test_errors.cpp:40: (void)svc.borrow("LP-001", "M-101", 400);
+CHANGED cpp/tests/test_errors.cpp:52: (void)svc.borrow("LP-002", "M-101", 7);
+same    cpp/tests/test_errors.cpp:62: (void)svc.borrow("LP-003", "M-102", 7);
+same    cpp/tests/test_errors.cpp:79: (void)svc.borrow(c.tag, c.member, c.days);
+same    cpp/tests/test_errors.cpp:95: (void)svc.borrow("LP-003", "M-102", 7);
+CHANGED cpp/tests/test_errors.cpp:107: const Loan loan = svc.borrow("LP-001", "M-101", 7);
+CHANGED cpp/tests/test_raii.cpp:59: (void)svc.borrow("LP-001", "M-101", 7);
+same    cpp/tests/test_robustness.cpp:31: (void)svc.borrow("lp-001", "M-101", 7);
+same    cpp/tests/test_robustness.cpp:41: REQUIRE_THROWS_AS((void)svc.borrow("lp-001", "M-101", 7), UnknownAssetTag);
+same    cpp/tests/test_robustness.cpp:42: REQUIRE_THROWS_AS((void)svc.borrow("lp-001", "M-101", 7), LoanError);
+same    cpp/tests/test_robustness.cpp:52: (void)svc.borrow("LP-004", "M-101", 7);
+same    cpp/tests/test_robustness.cpp:59: REQUIRE_THROWS_AS((void)svc.borrow("LP-004", "M-101", 7), LoanError);
+CHANGED cpp/tests/test_robustness.cpp:61: REQUIRE(svc.borrow("LP-004", "M-103", 7).memberId() == "M-103");
+same    cpp/tests/test_robustness.cpp:215: (void)svc.borrow("\xc3\xa4-lp", "M-101", 7);
+same    cpp/tests/test_robustness.cpp:220: REQUIRE_THROWS_AS((void)svc.borrow("\xc3\x84-lp", "M-101", 7), AssetTagCaseMismatch);
+CHANGED cpp/tests/test_robustness.cpp:243: (void)svc.borrow("LP-002", "M-101", 7);
+same    cpp/tests/test_robustness.cpp:254: (void)svc.borrow("LP-001", "M-101", days);
+CHANGED cpp/tests/test_robustness.cpp:265: REQUIRE(svc.borrow("LP-001", "M-101", 1).days() == 1);
+CHANGED cpp/tests/test_robustness.cpp:267: REQUIRE(svc.borrow("LP-001", "M-101", 90).days() == 90);
+CHANGED py/pinjamlab/app/runner.py:47: svc.borrow(req.tag, req.member_id, req.days)
+CHANGED py/pinjamlab/app/seed.py:24: svc.borrow("LP-002", "M-103", 5)   # LP-002 -> Loaned; M-103 -> 1 active
+CHANGED py/pinjamlab/app/seed.py:25: svc.borrow("SEED-01", "M-102", 5)  # M-102 -> 1 active
+CHANGED py/pinjamlab/app/seed.py:26: svc.borrow("SEED-02", "M-102", 5)  # M-102 -> 2 active == limit
+CHANGED py/tests/test_cleanup.py:58: svc.borrow("LP-001", "M-101", 7)
+same    py/tests/test_errors.py:25: svc.borrow("LP-999", "M-101", 7)
+same    py/tests/test_errors.py:33: svc.borrow("LP-001", "M-404", 7)
+same    py/tests/test_errors.py:40: svc.borrow("LP-001", "M-101", 400)
+CHANGED py/tests/test_errors.py:49: svc.borrow("LP-002", "M-101", 7)
+same    py/tests/test_errors.py:56: svc.borrow("LP-003", "M-102", 7)
+same    py/tests/test_errors.py:70: svc.borrow(tag, member, days)
+CHANGED py/tests/test_errors.py:87: loan = svc.borrow("LP-001", "M-101", 7)
+same    py/tests/test_errors.py:98: seeded().borrow("lp-001", "M-101", 7)
+same    py/tests/test_errors.py:111: svc.borrow("LP-004", "M-101", 7)
+CHANGED py/tests/test_errors.py:116: assert svc.borrow("LP-004", "M-103", 7).member_id == "M-103"
+CHANGED py/tests/test_errors.py:155: svc.borrow("LP-002", "M-101", 7)
+same    py/tests/test_robustness.py:22: svc.borrow("LP-001", "M-101", 7)
+CHANGED py/tests/test_robustness.py:30: assert svc.borrow("LP-001", "M-101", 7).member_id == "M-101"
+same    py/tests/test_robustness.py:39: svc.borrow("LP-001", "M-101", days)
+CHANGED py/tests/test_robustness.py:45: assert svc.borrow("LP-001", "M-101", 1).days == 1
+CHANGED py/tests/test_robustness.py:47: assert svc.borrow("LP-001", "M-101", 90).days == 90
+same    py/tests/test_robustness.py:55: svc.borrow("\u00e4-lp", "M-101", 7)
+same    py/tests/test_robustness.py:59: svc.borrow("\u00c4-lp", "M-101", 7)
+Baseline expressions: 48; changed enclosing source lines: 23; production changed: 8
+Method: baseline AST/C++ cleaned calls; exact-line diff matching. New calls excluded.
+The borrow invocation arguments themselves are unchanged; enclosing usage is what changed.

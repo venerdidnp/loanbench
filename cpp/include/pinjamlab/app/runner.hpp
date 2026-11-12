@@ -46,7 +46,13 @@ struct RunResult {
         }
         const auto& req = validated.value();
         try {
-            (void)svc.borrow(req.tag, req.memberId, req.days);
+            const auto borrowed = svc.borrow(req.tag, req.memberId, req.days);
+            if (!borrowed.ok()) {
+                ++result.rejected;
+                result.rejectedLines.push_back(
+                    ReportWriter::rejectedLine(row.lineNumber, borrowed.error()));
+                continue;
+            }
             ++result.created;
         } catch (const AssetTagCaseMismatch& e) {
             ++result.rejected;

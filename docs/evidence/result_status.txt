@@ -1,0 +1,42 @@
+Protected files match 5b26936:
+PASS: prediction, dependency test and fixed fixtures unchanged
+PASS: git diff --check -- cpp py run_tests.sh
+Unscoped git diff --check reports only pre-existing CRLF whitespace in docs/evidence/00_baseline_run.txt and 02_run_with_venv.txt; left untouched.
+ M cpp/include/pinjamlab/app/runner.hpp
+ M cpp/include/pinjamlab/app/seed.hpp
+ M cpp/include/pinjamlab/domain/result.hpp
+ M cpp/include/pinjamlab/service/loan_service.hpp
+ M cpp/tests/test_app.cpp
+ M cpp/tests/test_errors.cpp
+ M cpp/tests/test_raii.cpp
+ M cpp/tests/test_result.cpp
+ M cpp/tests/test_robustness.cpp
+ M docs/evidence/00_baseline_run.txt
+ M docs/evidence/02_run_with_venv.txt
+ M py/pinjamlab/app/runner.py
+ M py/pinjamlab/app/seed.py
+ M py/pinjamlab/service/loan_service.py
+ M py/tests/test_app.py
+ M py/tests/test_cleanup.py
+ M py/tests/test_errors.py
+ M py/tests/test_result.py
+ M py/tests/test_robustness.py
+ M run_tests.sh
+?? "Modul 3.txt"
+?? docs/evidence/result_asan.txt
+?? docs/evidence/result_callsites.txt
+?? docs/evidence/result_changed_callsites.txt
+?? docs/evidence/result_diff.patch
+?? docs/evidence/result_diff_stat.txt
+?? docs/evidence/result_full_run.txt
+?? docs/evidence/result_golden_generation.txt
+?? docs/evidence/result_new_files.patch
+?? docs/evidence/result_production_callsites.txt
+?? docs/evidence/result_status.txt
+?? docs/lab2_result_refactor.md
+?? docs/prediction_outcome.md
+?? sample-data/my-bad-requests.csv
+?? sample-data/my-expected-output.txt
+?? scripts/audit_result_calls.py
+?? scripts/run_result_asan.sh
+?? tests/

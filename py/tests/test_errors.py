@@ -43,11 +43,11 @@ def test_invalid_loan_duration_is_the_business_rule_maximum():
     assert str(exc.value) == "Loan duration exceeds maximum: 400 > 90"
 
 
-def test_equipment_unavailable_carries_the_tag():
+def test_equipment_unavailable_returns_same_message():
     svc = seeded()  # LP-002 was loaned to M-103 during seeding
-    with pytest.raises(EquipmentUnavailable) as exc:
-        svc.borrow("LP-002", "M-101", 7)
-    assert exc.value.tag == "LP-002"
+    result = svc.borrow("LP-002", "M-101", 7)
+    assert not result.ok
+    assert result.error == str(EquipmentUnavailable("LP-002"))
 
 
 def test_quota_exceeded_carries_active_and_limit():
@@ -58,11 +58,11 @@ def test_quota_exceeded_carries_active_and_limit():
     assert exc.value.limit == 2
 
 
-def test_every_concrete_error_is_catchable_as_the_loan_error_family():
+def test_remaining_thrown_service_errors_are_catchable_as_loan_error():
     svc = seeded()
     cases = [
         ("LP-999", "M-101", 7), ("LP-001", "M-404", 7), ("LP-001", "M-101", 400),
-        ("LP-002", "M-101", 7), ("LP-003", "M-102", 7),
+        ("LP-003", "M-102", 7),
     ]
     caught_as_family = 0
     for tag, member, days in cases:
@@ -70,7 +70,7 @@ def test_every_concrete_error_is_catchable_as_the_loan_error_family():
             svc.borrow(tag, member, days)
         except LoanError:
             caught_as_family += 1
-    assert caught_as_family == 5
+    assert caught_as_family == 4
 
 
 def test_a_bare_except_would_also_catch_keyboard_interrupt_dont_write_one():
@@ -84,7 +84,9 @@ def test_a_bare_except_would_also_catch_keyboard_interrupt_dont_write_one():
 
 def test_a_successful_borrow_raises_nothing_and_updates_both_entities():
     svc = seeded()
-    loan = svc.borrow("LP-001", "M-101", 7)
+    result = svc.borrow("LP-001", "M-101", 7)
+    assert result.ok
+    loan = result.value
     assert loan.tag == "LP-001"
     assert loan.member_id == "M-101"
     assert svc.find_equipment("LP-001").is_available() is False
@@ -113,7 +115,9 @@ def test_reservation_fields_message_family_and_allowed_member():
     assert (exc.value.tag, exc.value.reserved_for) == ("LP-004", "M-103")
     assert str(exc.value) == "Equipment reserved: LP-004 for M-103"
     assert svc.find_equipment("LP-004").is_available()
-    assert svc.borrow("LP-004", "M-103", 7).member_id == "M-103"
+    result = svc.borrow("LP-004", "M-103", 7)
+    assert result.ok
+    assert result.value.member_id == "M-103"
 
 
 def test_duplicate_equipment_preserves_original():
@@ -152,7 +156,7 @@ def test_return_updates_owner_once_and_allows_reborrow():
     assert svc.find_member("M-103").active_loans == 0
     with pytest.raises(LoanError, match="not on loan"):
         svc.return_item("LP-002", "M-103")
-    svc.borrow("LP-002", "M-101", 7)
+    assert svc.borrow("LP-002", "M-101", 7).ok
     with pytest.raises(LoanError, match="not loaned to member"):
         svc.return_item("LP-002", "M-103")
     svc.return_item("LP-002", "M-101")

@@ -35,9 +35,12 @@ inline void seedPinjamLab(LoanService& svc) {
 
     // Sequenced through the real borrow() path rather than poked directly,
     // so the seed itself exercises the same invariants the CSV rows do.
-    (void)svc.borrow("LP-002", "M-103", 5);   // LP-002 -> Loaned; M-103 -> 1 active
-    (void)svc.borrow("SEED-01", "M-102", 5);  // M-102 -> 1 active
-    (void)svc.borrow("SEED-02", "M-102", 5);  // M-102 -> 2 active == limit
+    if (const auto r = svc.borrow("LP-002", "M-103", 5); !r.ok())
+        throw std::logic_error(r.error());
+    if (const auto r = svc.borrow("SEED-01", "M-102", 5); !r.ok())
+        throw std::logic_error(r.error());
+    if (const auto r = svc.borrow("SEED-02", "M-102", 5); !r.ok())
+        throw std::logic_error(r.error());
 }
 
 }  // namespace pinjamlab
